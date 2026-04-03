@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Puerta a Puerta — Panel del Comercio</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;-webkit-tap-highlight-color:transparent;}
+body{background:#f5f5f5;min-height:100vh;}
+.app{max-width:480px;margin:0 auto;background:#fff;min-height:100vh;padding-bottom:80px;}
+
+/* HEADER */
+.header{background:#FF6B35;padding:16px;display:flex;align-items:center;gap:12px;}
+.header-logo{width:40px;height:40px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.header-title{font-size:16px;font-weight:700;color:#fff;}
+.header-sub{font-size:11px;color:rgba(255,255,255,.8);}
+.header-right{margin-left:auto;}
+.open-toggle{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);border-radius:20px;padding:6px 12px;cursor:pointer;border:none;}
+.open-toggle span{font-size:12px;font-weight:700;color:#fff;}
+.toggle-dot{width:10px;height:10px;border-radius:50%;background:#4CAF50;}
+.toggle-dot.closed{background:#fff;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;}
+.stat{background:#f9f9f9;border-radius:12px;padding:12px 10px;text-align:center;}
+.stat-val{font-size:22px;font-weight:700;color:#111;margin-bottom:2px;}
+.stat-lbl{font-size:10px;color:#888;}
+
+/* TABS */
+.tabs{display:flex;border-bottom:2px solid #f0f0f0;background:#fff;position:sticky;top:0;z-index:50;}
+.tab{flex:1;padding:12px 8px;text-align:center;font-size:12px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;}
+.tab.active{color:#FF6B35;border-bottom-color:#FF6B35;font-weight:700;}
+
+/* SECTION */
+.section{display:none;padding:14px;}
+.section.active{display:block;}
+
+/* PEDIDOS */
+.pedido-card{background:#fff;border:1px solid #f0f0f0;border-radius:14px;padding:14px;margin-bottom:10px;}
+.ped-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.ped-num{font-size:13px;font-weight:700;color:#111;}
+.ped-time{font-size:11px;color:#888;}
+.estado-pill{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;}
+.ep-nuevo{background:#FFF3E0;color:#E65100;}
+.ep-preparando{background:#E3F2FD;color:#1565C0;}
+.ep-camino{background:#E8F5E9;color:#2E7D32;}
+.ep-entregado{background:#F5F5F5;color:#555;}
+.ped-items{font-size:12px;color:#555;margin-bottom:8px;line-height:1.6;}
+.ped-total{font-size:14px;font-weight:700;color:#111;}
+.ped-actions{display:flex;gap:8px;margin-top:10px;}
+.btn-accion{flex:1;padding:9px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;}
+.btn-primary{background:#FF6B35;color:#fff;}
+.btn-secondary{background:#f0f0f0;color:#555;}
+.btn-danger{background:#FFEBEE;color:#B71C1C;}
+.empty{text-align:center;padding:50px 20px;color:#aaa;}
+.empty .big{font-size:44px;margin-bottom:10px;}
+.empty p{font-size:13px;line-height:1.7;}
+
+/* MENÚ */
+.menu-section-head{display:flex;justify-content:space-between;align-items:center;padding:6px 0 10px;}
+.menu-section-title{font-size:13px;font-weight:700;color:#111;}
+.btn-add{background:#FF6B35;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;}
+.producto-card{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f5f5f5;}
+.prod-info .prod-name{font-size:13px;font-weight:600;color:#111;}
+.prod-info .prod-cat{font-size:11px;color:#888;margin-top:2px;}
+.prod-right{display:flex;align-items:center;gap:10px;}
+.prod-price{font-size:14px;font-weight:700;color:#FF6B35;}
+.prod-toggle{width:40px;height:22px;border-radius:11px;background:#ccc;position:relative;cursor:pointer;border:none;transition:.2s;}
+.prod-toggle.on{background:#FF6B35;}
+.prod-toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;}
+.prod-toggle.on::after{left:20px;}
+
+/* FORMULARIO PRODUCTO */
+.form-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:flex-end;}
+.form-overlay.show{display:flex;}
+.form-sheet{background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:480px;margin:0 auto;max-height:85vh;overflow-y:auto;}
+.form-title{font-size:16px;font-weight:700;color:#111;margin-bottom:16px;}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:12px;font-weight:600;color:#555;margin-bottom:5px;display:block;}
+.form-input{width:100%;border:1.5px solid #eee;border-radius:10px;padding:10px 12px;font-size:14px;color:#111;outline:none;}
+.form-input:focus{border-color:#FF6B35;}
+.form-row{display:flex;gap:10px;}
+.form-row .form-group{flex:1;}
+.btn-guardar{width:100%;background:#FF6B35;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;}
+.btn-cancelar{width:100%;background:#f5f5f5;color:#555;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;}
+
+/* CONFIGURACIÓN */
+.config-group{margin-bottom:20px;}
+.config-title{font-size:13px;font-weight:700;color:#111;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #f0f0f0;}
+.config-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f9f9f9;}
+.config-label{font-size:13px;color:#333;}
+.config-val{font-size:13px;font-weight:600;color:#FF6B35;}
+.dia-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.dia-btn{padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;border:1.5px solid #eee;background:#fff;color:#555;cursor:pointer;}
+.dia-btn.on{background:#FF6B35;color:#fff;border-color:#FF6B35;}
+.horario-row{display:flex;gap:10px;align-items:center;margin-top:8px;}
+.horario-input{flex:1;border:1.5px solid #eee;border-radius:8px;padding:8px 10px;font-size:13px;color:#111;outline:none;}
+.horario-input:focus{border-color:#FF6B35;}
+.btn-guardar-config{width:100%;background:#FF6B35;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;margin-top:16px;}
+.delivery-opts{display:flex;gap:8px;margin-top:8px;}
+.delivery-opt{flex:1;border:1.5px solid #eee;border-radius:10px;padding:10px 6px;text-align:center;font-size:11px;font-weight:600;color:#555;cursor:pointer;}
+.delivery-opt.sel{border-color:#FF6B35;color:#FF6B35;background:#FFF3E0;}
+
+/* NAV */
+.nav{display:flex;justify-content:space-around;padding:10px 0 14px;border-top:1px solid #eee;background:#fff;position:fixed;bottom:0;width:100%;max-width:480px;z-index:100;}
+.nav-i{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+.nav-i svg{width:22px;height:22px;}
+.nav-i span{font-size:10px;color:#888;}
+.nav-i.active span{color:#FF6B35;font-weight:700;}
+
+/* TOAST */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#111;color:#FF6B35;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;display:none;white-space:nowrap;}
+
+/* BADGE NUEVO */
+.badge-nuevo{background:#FF6B35;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">
+    <svg width="28" height="28" viewBox="0 0 90 90" fill="none">
+      <path d="M10 36 L45 18 L80 36" stroke="#FF6B35" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <rect x="12" y="36" width="30" height="46" rx="4" fill="#FF6B35" opacity=".9"/>
+      <rect x="48" y="36" width="30" height="46" rx="4" fill="#FF6B35"/>
+      <circle cx="36" cy="59" r="4" fill="#fff"/>
+      <circle cx="54" cy="59" r="4" fill="#fff"/>
+    </svg>
+  </div>
+  <div>
+    <div class="header-title" id="comercio-nombre">Mi Comercio</div>
+    <div class="header-sub">Panel de gestión · Puerta a Puerta</div>
+  </div>
+  <div class="header-right">
+    <button class="open-toggle" id="toggle-open" onclick="toggleAbierto()">
+      <div class="toggle-dot" id="toggle-dot"></div>
+      <span id="toggle-label">Abierto</span>
+    </button>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-val" id="stat-hoy">0</div>
+    <div class="stat-lbl">Pedidos hoy</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="stat-semana">$0</div>
+    <div class="stat-lbl">Esta semana</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="stat-rating">5.0</div>
+    <div class="stat-lbl">Mi rating</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" id="tab-pedidos" onclick="setTab('pedidos')">
+    Pedidos <span class="badge-nuevo" id="badge-nuevos" style="display:none;">0</span>
+  </div>
+  <div class="tab" id="tab-menu" onclick="setTab('menu')">Menú</div>
+  <div class="tab" id="tab-config" onclick="setTab('config')">Configuración</div>
+</div>
+
+<!-- PEDIDOS -->
+<div class="section active" id="sec-pedidos">
+  <div id="pedidos-container">
+    <div class="empty"><div class="big">🎉</div><p>No hay pedidos pendientes.<br>Cuando lleguen aparecen acá.</p></div>
+  </div>
+</div>
+
+<!-- MENÚ -->
+<div class="section" id="sec-menu">
+  <div class="menu-section-head">
+    <div class="menu-section-title">Mis productos</div>
+    <button class="btn-add" onclick="abrirFormProducto()">+ Agregar</button>
+  </div>
+  <div id="productos-container">
+    <div class="empty"><div class="big">🍽️</div><p>Todavía no cargaste productos.<br>Tocá "+ Agregar" para empezar.</p></div>
+  </div>
+</div>
+
+<!-- CONFIGURACIÓN -->
+<div class="section" id="sec-config">
+  <div class="config-group">
+    <div class="config-title">Datos del comercio</div>
+    <div class="form-group">
+      <label class="form-label">Nombre del comercio</label>
+      <input class="form-input" id="cfg-nombre" type="text" placeholder="Ej: La Piola Pizzería"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categoría</label>
+      <select class="form-input" id="cfg-categoria">
+        <option value="comida">Comida</option>
+        <option value="carniceria">Carnicería</option>
+        <option value="farmacia">Farmacia</option>
+        <option value="almacen">Almacén</option>
+        <option value="verduleria">Verdulería</option>
+        <option value="panaderia">Panadería</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Dirección</label>
+      <input class="form-input" id="cfg-direccion" type="text" placeholder="Ej: Av. Belgrano 234"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Teléfono de contacto</label>
+      <input class="form-input" id="cfg-telefono" type="tel" placeholder="Ej: 3854123456"/>
+    </div>
+  </div>
+
+  <div class="config-group">
+    <div class="config-title">Horarios</div>
+    <label class="form-label">Días que abrís</label>
+    <div class="dia-row">
+      <button class="dia-btn on" data-dia="lun" onclick="toggleDia(this)">Lun</button>
+      <button class="dia-btn on" data-dia="mar" onclick="toggleDia(this)">Mar</button>
+      <button class="dia-btn on" data-dia="mie" onclick="toggleDia(this)">Mié</button>
+      <button class="dia-btn on" data-dia="jue" onclick="toggleDia(this)">Jue</button>
+      <button class="dia-btn on" data-dia="vie" onclick="toggleDia(this)">Vie</button>
+      <button class="dia-btn on" data-dia="sab" onclick="toggleDia(this)">Sáb</button>
+      <button class="dia-btn" data-dia="dom" onclick="toggleDia(this)">Dom</button>
+    </div>
+    <div class="horario-row" style="margin-top:14px;">
+      <label class="form-label" style="margin:0;min-width:60px;">Abre:</label>
+      <input class="horario-input" id="cfg-apertura" type="time" value="08:00"/>
+      <label class="form-label" style="margin:0;min-width:60px;">Cierra:</label>
+      <input class="horario-input" id="cfg-cierre" type="time" value="22:00"/>
+    </div>
+  </div>
+
+  <div class="config-group">
+    <div class="config-title">Delivery</div>
+    <label class="form-label">Tipo de entrega</label>
+    <div class="delivery-opts">
+      <div class="delivery-opt sel" onclick="selDelivery(this,'propio')">Cadete propio</div>
+      <div class="delivery-opt" onclick="selDelivery(this,'nortpi')">Red Puerta a Puerta</div>
+      <div class="delivery-opt" onclick="selDelivery(this,'hibrido')">Híbrido</div>
+    </div>
+    <div class="form-row" style="margin-top:12px;">
+      <div class="form-group">
+        <label class="form-label">Precio envío ($)</label>
+        <input class="form-input" id="cfg-envio" type="number" value="800" placeholder="800"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Radio entrega (km)</label>
+        <input class="form-input" id="cfg-radio" type="number" value="3" placeholder="3"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Pedido mínimo ($)</label>
+      <input class="form-input" id="cfg-minimo" type="number" value="0" placeholder="0 = sin mínimo"/>
+    </div>
+  </div>
+
+  <button class="btn-guardar-config" onclick="guardarConfig()">Guardar cambios</button>
+</div>
+
+<!-- FORM PRODUCTO -->
+<div class="form-overlay" id="form-overlay">
+  <div class="form-sheet">
+    <div class="form-title" id="form-prod-title">Agregar producto</div>
+    <div class="form-group">
+      <label class="form-label">Nombre del producto</label>
+      <input class="form-input" id="prod-nombre" type="text" placeholder="Ej: Pizza Muzarella"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descripción (opcional)</label>
+      <input class="form-input" id="prod-desc" type="text" placeholder="Ej: Salsa, queso, orégano"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Precio ($)</label>
+        <input class="form-input" id="prod-precio" type="number" placeholder="2500"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categoría</label>
+        <input class="form-input" id="prod-cat" type="text" placeholder="Ej: Pizzas"/>
+      </div>
+    </div>
+    <button class="btn-guardar" onclick="guardarProducto()">Guardar producto</button>
+    <button class="btn-cancelar" onclick="cerrarFormProducto()">Cancelar</button>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-i active" id="nav-inicio" onclick="goNav('inicio')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+    <span>Inicio</span>
+  </div>
+  <div class="nav-i" id="nav-pedidos-nav" onclick="goNav('pedidos')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+    <span>Pedidos</span>
+  </div>
+  <div class="nav-i" id="nav-menu-nav" onclick="goNav('menu')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <span>Menú</span>
+  </div>
+  <div class="nav-i" id="nav-config-nav" onclick="goNav('config')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    <span>Config</span>
+  </div>
+</div>
+
+</div>
+
+<script>
+const SUPA_URL = 'https://fmqlpgerqdiplnvjjarl.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtcWxwZ2VycWRpcGxudmpqYXJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MTkwNTYsImV4cCI6MjA5MDQ5NTA1Nn0.r1X4NSX8t-v9EeJQ-eK9DVslIWkpo2_UCn-oRy6k--w';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let comercioId = null;
+let abierto = true;
+let productos = [];
+let pedidos = [];
+let deliveryTipo = 'propio';
+let editProdId = null;
+
+function toast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => t.style.display='none', dur);
+}
+
+function setTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('sec-'+tab).classList.add('active');
+}
+
+function goNav(nav) {
+  document.querySelectorAll('.nav-i').forEach(n => n.classList.remove('active'));
+  document.getElementById('nav-'+nav+'-nav') && document.getElementById('nav-'+nav+'-nav').classList.add('active');
+  document.getElementById('nav-inicio') && nav==='inicio' && document.getElementById('nav-inicio').classList.add('active');
+  if (nav === 'pedidos') setTab('pedidos');
+  else if (nav === 'menu') setTab('menu');
+  else if (nav === 'config') setTab('config');
+  else setTab('pedidos');
+}
+
+function toggleAbierto() {
+  abierto = !abierto;
+  document.getElementById('toggle-dot').className = 'toggle-dot' + (abierto ? '' : ' closed');
+  document.getElementById('toggle-label').textContent = abierto ? 'Abierto' : 'Cerrado';
+  toast(abierto ? '✅ Tu local está abierto' : '🔒 Tu local está cerrado');
+  if (comercioId) sb.from('comercios').update({abierto_ahora: abierto}).eq('id', comercioId);
+}
+
+function toggleDia(el) {
+  el.classList.toggle('on');
+}
+
+function selDelivery(el, tipo) {
+  document.querySelectorAll('.delivery-opt').forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel');
+  deliveryTipo = tipo;
+}
+
+// CARGAR DATOS
+async function cargarComercio() {
+  try {
+    const { data } = await sb.from('comercios').select('*').limit(1).single();
+    if (data) {
+      comercioId = data.id;
+      document.getElementById('comercio-nombre').textContent = data.nombre;
+      document.getElementById('cfg-nombre').value = data.nombre || '';
+      document.getElementById('cfg-categoria').value = data.categoria || 'comida';
+      document.getElementById('cfg-direccion').value = data.direccion || '';
+      document.getElementById('cfg-telefono').value = data.telefono || '';
+      document.getElementById('cfg-envio').value = data.precio_envio_propio || 800;
+      document.getElementById('cfg-radio').value = data.radio_entrega_km || 3;
+      document.getElementById('stat-rating').textContent = data.rating || '5.0';
+      abierto = data.abierto_ahora !== false;
+      document.getElementById('toggle-dot').className = 'toggle-dot' + (abierto ? '' : ' closed');
+      document.getElementById('toggle-label').textContent = abierto ? 'Abierto' : 'Cerrado';
+    }
+  } catch(e) {}
+  await cargarProductos();
+  await cargarPedidos();
+}
+
+async function cargarProductos() {
+  try {
+    const { data } = await sb.from('productos').select('*').eq('comercio_id', comercioId).order('categoria');
+    productos = data || [];
+  } catch {
+    productos = [
+      {id:'1', nombre:'Pizza Muzarella', descripcion:'Salsa, queso, orégano', precio:2500, categoria:'Pizzas', disponible:true},
+      {id:'2', nombre:'Empanadas carne x6', descripcion:'Cortada a cuchillo', precio:1800, categoria:'Empanadas', disponible:true},
+      {id:'3', nombre:'Coca Cola 1.5L', descripcion:'', precio:800, categoria:'Bebidas', disponible:false},
+    ];
+  }
+  renderProductos();
+}
+
+async function cargarPedidos() {
+  try {
+    const { data } = await sb.from('pedidos').select('*').eq('comercio_id', comercioId).order('created_at', {ascending:false}).limit(20);
+    pedidos = data || [];
+  } catch {
+    pedidos = [
+      {id:'1', numero:1042, estado:'nuevo', items:[{nombre:'Pizza Muzarella',qty:1,precio:2500},{nombre:'Coca Cola',qty:2,precio:800}], total:4900, created_at: new Date().toISOString()},
+      {id:'2', numero:1041, estado:'preparando', items:[{nombre:'Empanadas carne x6',qty:2,precio:1800}], total:4400, created_at: new Date(Date.now()-600000).toISOString()},
+    ];
+  }
+  renderPedidos();
+  actualizarStats();
+}
+
+function renderProductos() {
+  if (!productos.length) {
+    document.getElementById('productos-container').innerHTML = '<div class="empty"><div class="big">🍽️</div><p>Todavía no cargaste productos.<br>Tocá "+ Agregar" para empezar.</p></div>';
+    return;
+  }
+  const cats = [...new Set(productos.map(p => p.categoria))];
+  document.getElementById('productos-container').innerHTML = cats.map(cat => `
+    <div style="margin-bottom:6px;">
+      <div style="font-size:11px;font-weight:700;color:#FF6B35;text-transform:uppercase;letter-spacing:.06em;padding:8px 0 4px;">${cat}</div>
+      ${productos.filter(p => p.categoria===cat).map(p => `
+        <div class="producto-card">
+          <div class="prod-info">
+            <div class="prod-name">${p.nombre}</div>
+            <div class="prod-cat">${p.descripcion||''}</div>
+          </div>
+          <div class="prod-right">
+            <div class="prod-price">$${Number(p.precio).toLocaleString('es-AR')}</div>
+            <button class="prod-toggle ${p.disponible?'on':''}" onclick="toggleProducto('${p.id}',this)"></button>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function renderPedidos() {
+  if (!pedidos.length) {
+    document.getElementById('pedidos-container').innerHTML = '<div class="empty"><div class="big">🎉</div><p>No hay pedidos pendientes.<br>Cuando lleguen aparecen acá.</p></div>';
+    return;
+  }
+  const estados = {nuevo:'ep-nuevo', preparando:'ep-preparando', en_camino:'ep-camino', entregado:'ep-entregado'};
+  const etiquetas = {nuevo:'Nuevo', preparando:'Preparando', en_camino:'En camino', entregado:'Entregado'};
+  const nuevos = pedidos.filter(p => p.estado==='nuevo').length;
+  const badge = document.getElementById('badge-nuevos');
+  if (nuevos > 0) { badge.style.display='inline-flex'; badge.textContent=nuevos; }
+  else { badge.style.display='none'; }
+
+  document.getElementById('pedidos-container').innerHTML = pedidos.map(p => {
+    const items = Array.isArray(p.items) ? p.items : [];
+    const itemsStr = items.map(i => `${i.qty||1}x ${i.nombre}`).join(', ');
+    const hora = new Date(p.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    const estClass = estados[p.estado] || 'ep-nuevo';
+    const estLabel = etiquetas[p.estado] || 'Nuevo';
+    let acciones = '';
+    if (p.estado==='nuevo') acciones = `<button class="btn-accion btn-primary" onclick="cambiarEstado('${p.id}','preparando')">Aceptar pedido</button><button class="btn-accion btn-danger" onclick="cambiarEstado('${p.id}','cancelado')">Rechazar</button>`;
+    else if (p.estado==='preparando') acciones = `<button class="btn-accion btn-primary" onclick="cambiarEstado('${p.id}','en_camino')">Listo para enviar</button>`;
+    else if (p.estado==='en_camino') acciones = `<button class="btn-accion btn-secondary" onclick="cambiarEstado('${p.id}','entregado')">Marcar entregado</button>`;
+    return `<div class="pedido-card" id="ped-${p.id}">
+      <div class="ped-head">
+        <div><div class="ped-num">Pedido #${p.numero||'—'}</div><div class="ped-time">${hora} hs</div></div>
+        <span class="estado-pill ${estClass}">${estLabel}</span>
+      </div>
+      <div class="ped-items">${itemsStr}</div>
+      <div class="ped-total">Total: $${Number(p.total||0).toLocaleString('es-AR')}</div>
+      ${acciones ? `<div class="ped-actions">${acciones}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function actualizarStats() {
+  const hoy = pedidos.filter(p => {
+    const d = new Date(p.created_at);
+    const ahora = new Date();
+    return d.getDate()===ahora.getDate() && d.getMonth()===ahora.getMonth();
+  });
+  document.getElementById('stat-hoy').textContent = hoy.length;
+  const semana = pedidos.reduce((s,p) => s + Number(p.total||0), 0);
+  document.getElementById('stat-semana').textContent = semana > 0 ? `$${Math.round(semana/1000)}K` : '$0';
+}
+
+async function cambiarEstado(id, nuevoEstado) {
+  const labels = {preparando:'✅ Pedido aceptado', en_camino:'📦 Listo para enviar', entregado:'🎉 Marcado como entregado', cancelado:'❌ Pedido rechazado'};
+  try { await sb.from('pedidos').update({estado:nuevoEstado}).eq('id',id); } catch {}
+  const ped = pedidos.find(p => p.id===id);
+  if (ped) ped.estado = nuevoEstado;
+  renderPedidos();
+  toast(labels[nuevoEstado] || 'Estado actualizado');
+}
+
+async function toggleProducto(id, btn) {
+  btn.classList.toggle('on');
+  const disponible = btn.classList.contains('on');
+  try { await sb.from('productos').update({disponible}).eq('id',id); } catch {}
+  const prod = productos.find(p => p.id===id);
+  if (prod) prod.disponible = disponible;
+  toast(disponible ? '✅ Producto disponible' : '🔒 Producto pausado');
+}
+
+function abrirFormProducto(prod=null) {
+  editProdId = prod ? prod.id : null;
+  document.getElementById('form-prod-title').textContent = prod ? 'Editar producto' : 'Agregar producto';
+  document.getElementById('prod-nombre').value = prod ? prod.nombre : '';
+  document.getElementById('prod-desc').value = prod ? (prod.descripcion||'') : '';
+  document.getElementById('prod-precio').value = prod ? prod.precio : '';
+  document.getElementById('prod-cat').value = prod ? (prod.categoria||'') : '';
+  document.getElementById('form-overlay').classList.add('show');
+}
+
+function cerrarFormProducto() {
+  document.getElementById('form-overlay').classList.remove('show');
+  editProdId = null;
+}
+
+async function guardarProducto() {
+  const nombre = document.getElementById('prod-nombre').value.trim();
+  const precio = parseFloat(document.getElementById('prod-precio').value);
+  if (!nombre || !precio) { toast('Completá nombre y precio'); return; }
+  const prod = {
+    nombre,
+    descripcion: document.getElementById('prod-desc').value.trim(),
+    precio,
+    categoria: document.getElementById('prod-cat').value.trim() || 'General',
+    disponible: true,
+    comercio_id: comercioId,
+  };
+  try {
+    if (editProdId) {
+      await sb.from('productos').update(prod).eq('id', editProdId);
+    } else {
+      await sb.from('productos').insert([prod]);
+    }
+  } catch {}
+  cerrarFormProducto();
+  await cargarProductos();
+  toast('✅ Producto guardado');
+}
+
+async function guardarConfig() {
+  const config = {
+    nombre: document.getElementById('cfg-nombre').value.trim(),
+    categoria: document.getElementById('cfg-categoria').value,
+    direccion: document.getElementById('cfg-direccion').value.trim(),
+    telefono: document.getElementById('cfg-telefono').value.trim(),
+    precio_envio_propio: parseFloat(document.getElementById('cfg-envio').value) || 800,
+    radio_entrega_km: parseFloat(document.getElementById('cfg-radio').value) || 3,
+    tipo_delivery: deliveryTipo,
+  };
+  if (config.nombre) document.getElementById('comercio-nombre').textContent = config.nombre;
+  try {
+    if (comercioId) await sb.from('comercios').update(config).eq('id', comercioId);
+  } catch {}
+  toast('✅ Configuración guardada');
+}
+
+// Polling cada 30 segundos para nuevos pedidos
+setInterval(cargarPedidos, 30000);
+
+// INIT
+cargarComercio();
+</script>
+</body>
+</html>
