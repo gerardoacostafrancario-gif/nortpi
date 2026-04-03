@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Puerta a Puerta — Panel del Cadete</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;-webkit-tap-highlight-color:transparent;}
+body{background:#f5f5f5;}
+.app{max-width:480px;margin:0 auto;background:#fff;min-height:100vh;padding-bottom:80px;}
+
+.header{background:#111;padding:16px;display:flex;align-items:center;gap:12px;}
+.header-logo{width:40px;height:40px;border-radius:10px;background:#FF6B35;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.header-info{flex:1;}
+.header-name{font-size:16px;font-weight:700;color:#fff;}
+.header-sub{font-size:11px;color:#aaa;}
+.disp-btn{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:20px;padding:7px 14px;cursor:pointer;border:none;}
+.disp-btn span{font-size:12px;font-weight:700;color:#fff;}
+.disp-dot{width:10px;height:10px;border-radius:50%;background:#aaa;}
+.disp-dot.on{background:#00E676;}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px;}
+.stat{background:#f9f9f9;border-radius:12px;padding:12px 10px;text-align:center;}
+.stat-val{font-size:22px;font-weight:700;color:#111;}
+.stat-lbl{font-size:10px;color:#888;margin-top:2px;}
+
+.tabs{display:flex;border-bottom:2px solid #f0f0f0;position:sticky;top:0;background:#fff;z-index:50;}
+.tab{flex:1;padding:12px 8px;text-align:center;font-size:12px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;}
+.tab.active{color:#FF6B35;border-bottom-color:#FF6B35;font-weight:700;}
+.badge-n{background:#FF6B35;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:3px;vertical-align:middle;}
+
+.sec{display:none;padding:14px;}
+.sec.active{display:block;}
+
+/* VIAJE CARD */
+.viaje-card{border-radius:14px;padding:14px;margin-bottom:12px;border:1.5px solid #f0f0f0;}
+.viaje-card.nuevo{border-color:#FF6B35;background:#FFFAF8;}
+.viaje-card.activo{border-color:#00C853;background:#F0FFF4;}
+.v-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.v-num{font-size:13px;font-weight:700;color:#111;}
+.v-time{font-size:11px;color:#888;margin-top:2px;}
+.v-pill{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;}
+.vp-nuevo{background:#FFF3E0;color:#E65100;}
+.vp-camino{background:#E8F5E9;color:#2E7D32;}
+.vp-done{background:#F5F5F5;color:#555;}
+
+.v-route{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+.v-stop{display:flex;gap:10px;align-items:flex-start;}
+.v-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.vd-retiro{background:#FF6B35;}
+.vd-entrega{background:#00C853;}
+.v-line{width:2px;height:14px;background:#eee;margin-left:5px;}
+.v-stop-label{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.04em;}
+.v-stop-addr{font-size:13px;color:#111;margin-top:1px;}
+.v-stop-name{font-size:11px;color:#888;}
+
+.v-meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;}
+.v-tag{font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;}
+.vt-earn{background:#E8F5E9;color:#2E7D32;}
+.vt-dist{background:#E3F2FD;color:#1565C0;}
+.vt-time{background:#FFF3E0;color:#E65100;}
+
+.v-acts{display:flex;gap:8px;}
+.btn{flex:1;padding:11px;border-radius:10px;border:none;font-size:13px;font-weight:700;cursor:pointer;}
+.btn-o{background:#FF6B35;color:#fff;}
+.btn-g{background:#f0f0f0;color:#555;}
+.btn-full{width:100%;padding:12px;border-radius:10px;border:none;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px;}
+
+/* CÓDIGO DE VERIFICACIÓN */
+.cod-box{background:#111;border-radius:12px;padding:14px;margin:10px 0;}
+.cod-title{font-size:12px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+.cod-desc{font-size:11px;color:#888;margin-bottom:12px;line-height:1.5;}
+.cod-input-row{display:flex;gap:8px;margin-bottom:10px;}
+.cod-digit{flex:1;height:52px;border-radius:10px;border:2px solid #333;background:#1a1a1a;color:#00E676;font-size:24px;font-weight:900;text-align:center;outline:none;}
+.cod-digit:focus{border-color:#FF6B35;}
+.btn-verificar{width:100%;background:#FF6B35;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;}
+.btn-verificar:disabled{opacity:.4;cursor:not-allowed;}
+.cod-error{font-size:12px;color:#FF5252;text-align:center;margin-top:6px;display:none;}
+.cod-ok{background:#00C853;color:#fff;border-radius:10px;padding:10px;text-align:center;font-size:13px;font-weight:700;display:none;}
+
+/* GANANCIAS */
+.earn-card{background:#111;border-radius:14px;padding:16px;margin-bottom:12px;color:#fff;}
+.earn-val{font-size:32px;font-weight:900;color:#00E676;margin-bottom:4px;}
+.earn-lbl{font-size:12px;color:#aaa;}
+.earn-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+.eg{background:#1a1a1a;border-radius:10px;padding:12px;}
+.eg-val{font-size:18px;font-weight:700;color:#fff;}
+.eg-lbl{font-size:11px;color:#888;margin-top:2px;}
+.viaje-hist{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f5f5f5;font-size:13px;}
+.vh-addr{color:#111;font-weight:500;}
+.vh-earn{color:#00C853;font-weight:700;}
+.vh-time{font-size:11px;color:#888;}
+
+/* PERFIL */
+.perf-av{width:60px;height:60px;border-radius:50%;background:#FF6B35;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:#fff;}
+.perf-menu{background:#f9f9f9;border-radius:14px;overflow:hidden;}
+.pm-item{padding:14px 16px;border-bottom:1px solid #eee;font-size:13px;font-weight:500;color:#111;display:flex;justify-content:space-between;}
+.pm-item:last-child{border-bottom:none;}
+
+.empty{text-align:center;padding:50px 20px;color:#aaa;}
+.empty .big{font-size:44px;margin-bottom:10px;}
+.empty p{font-size:13px;line-height:1.7;}
+
+.nav{display:flex;justify-content:space-around;padding:10px 0 14px;border-top:1px solid #eee;background:#fff;position:fixed;bottom:0;width:100%;max-width:480px;z-index:100;}
+.ni{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+.ni svg{width:22px;height:22px;}
+.ni span{font-size:10px;color:#888;}
+.ni.active span{color:#FF6B35;font-weight:700;}
+
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#111;color:#FF6B35;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;display:none;white-space:nowrap;}
+
+/* NO DISPONIBLE */
+.no-disp{text-align:center;padding:40px 20px;}
+.no-disp .big{font-size:48px;margin-bottom:12px;}
+.no-disp h3{font-size:16px;font-weight:700;color:#111;margin-bottom:8px;}
+.no-disp p{font-size:13px;color:#888;line-height:1.7;margin-bottom:20px;}
+.btn-activar{background:#FF6B35;color:#fff;border:none;border-radius:12px;padding:14px 32px;font-size:15px;font-weight:700;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="toast" id="toast"></div>
+
+<div class="header">
+  <div class="header-logo">
+    <svg width="24" height="24" viewBox="0 0 90 90" fill="none">
+      <path d="M10 36 L45 18 L80 36" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="12" y="36" width="30" height="46" rx="4" fill="#fff" opacity=".9"/>
+      <rect x="48" y="36" width="30" height="46" rx="4" fill="#fff"/>
+    </svg>
+  </div>
+  <div class="header-info">
+    <div class="header-name" id="cad-nombre">Miguel González</div>
+    <div class="header-sub">Cadete · Puerta a Puerta</div>
+  </div>
+  <button class="disp-btn" onclick="togDisp()">
+    <div class="disp-dot" id="disp-dot"></div>
+    <span id="disp-lbl">Disponible</span>
+  </button>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-val" id="s-hoy">0</div><div class="stat-lbl">Viajes hoy</div></div>
+  <div class="stat"><div class="stat-val" id="s-earn">$0</div><div class="stat-lbl">Ganado hoy</div></div>
+  <div class="stat"><div class="stat-val" id="s-rat">5.0</div><div class="stat-lbl">Rating</div></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" id="tab-v" onclick="stab('v')">Viajes <span class="badge-n" id="bn" style="display:none">0</span></div>
+  <div class="tab" id="tab-g" onclick="stab('g')">Ganancias</div>
+  <div class="tab" id="tab-p" onclick="stab('p')">Perfil</div>
+</div>
+
+<!-- VIAJES -->
+<div class="sec active" id="sec-v">
+  <div id="viajes-container"></div>
+</div>
+
+<!-- GANANCIAS -->
+<div class="sec" id="sec-g">
+  <div class="earn-card">
+    <div class="earn-lbl">Ganado esta semana</div>
+    <div class="earn-val" id="earn-sem">$0</div>
+    <div class="earn-grid">
+      <div class="eg"><div class="eg-val" id="eg-viajes">0</div><div class="eg-lbl">Viajes totales</div></div>
+      <div class="eg"><div class="eg-val" id="eg-prom">$0</div><div class="eg-lbl">Promedio por viaje</div></div>
+    </div>
+  </div>
+  <div style="font-size:13px;font-weight:700;color:#111;margin:4px 0 10px;">Últimos viajes</div>
+  <div id="hist-container">
+    <div class="empty"><div class="big">🛵</div><p>Todavía no hiciste viajes.<br/>Activate para recibir pedidos.</p></div>
+  </div>
+</div>
+
+<!-- PERFIL -->
+<div class="sec" id="sec-p">
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+    <div class="perf-av" id="perf-av">MG</div>
+    <div>
+      <div style="font-size:16px;font-weight:700;color:#111;" id="perf-nombre">Miguel González</div>
+      <div style="font-size:12px;color:#888;">Cadete verificado · Moto Honda Wave</div>
+      <div style="font-size:12px;color:#888;">+54 385 412 3456</div>
+    </div>
+  </div>
+  <div class="perf-menu">
+    <div class="pm-item">Mis documentos <span style="color:#00C853;">✓ Verificado</span></div>
+    <div class="pm-item">Mi vehículo <span style="color:#888;">›</span></div>
+    <div class="pm-item">Zona de trabajo <span style="color:#888;">›</span></div>
+    <div class="pm-item">Historial de pagos <span style="color:#888;">›</span></div>
+    <div class="pm-item" style="color:#B71C1C;">Cerrar sesión <span>›</span></div>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="ni active" id="ni-v" onclick="stab('v');aN('ni-v')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>Viajes</span>
+  </div>
+  <div class="ni" id="ni-g" onclick="stab('g');aN('ni-g')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    <span>Ganancias</span>
+  </div>
+  <div class="ni" id="ni-p" onclick="stab('p');aN('ni-p')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    <span>Perfil</span>
+  </div>
+</div>
+</div>
+
+<script>
+const SU='https://fmqlpgerqdiplnvjjarl.supabase.co';
+const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtcWxwZ2VycWRpcGxudmpqYXJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MTkwNTYsImV4cCI6MjA5MDQ5NTA1Nn0.r1X4NSX8t-v9EeJQ-eK9DVslIWkpo2_UCn-oRy6k--w';
+const sb=supabase.createClient(SU,SK);
+
+let disp=true, viajes=[], codsIngresados={};
+
+function toast(m,d=2500){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',d);}
+function stab(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');document.getElementById('sec-'+tab).classList.add('active');}
+function aN(id){document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+function togDisp(){
+  disp=!disp;
+  document.getElementById('disp-dot').className='disp-dot'+(disp?' on':'');
+  document.getElementById('disp-lbl').textContent=disp?'Disponible':'Inactivo';
+  toast(disp?'✅ Estás disponible para recibir viajes':'⏸️ Pausaste los viajes');
+  renderViajes();
+}
+
+// Generar código de 4 dígitos para un pedido
+function genCod(pedId){
+  const seed = pedId.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  return String((seed*7+1337)%9000+1000);
+}
+
+async function cargarViajes(){
+  try {
+    const {data} = await sb.from('pedidos').select('*,comercios(nombre,direccion)').eq('tipo_delivery','app').in('estado',['preparando','en_camino']).order('created_at',{ascending:false});
+    viajes = data||[];
+  } catch {
+    viajes = [
+      {id:'v1',numero:1043,estado:'preparando',tipo_delivery:'app',items:[{nombre:'Pizza Muzarella',qty:1,precio:2500},{nombre:'Coca Cola',qty:2,precio:800}],total:5700,direccion_entrega:'Urquiza 456, Santiago del Estero',created_at:new Date().toISOString(),comercios:{nombre:'La Piola Pizzería',direccion:'Av. Belgrano 234'}},
+      {id:'v2',numero:1041,estado:'en_camino',tipo_delivery:'app',items:[{nombre:'Empanadas x6',qty:1,precio:1800}],total:2600,direccion_entrega:'San Martín 789, Santiago del Estero',created_at:new Date(Date.now()-900000).toISOString(),comercios:{nombre:'Carnicería El Norte',direccion:'25 de Mayo 567'}},
+    ];
+  }
+  renderViajes();
+  actualizarStats();
+}
+
+function renderViajes(){
+  const container = document.getElementById('viajes-container');
+  if(!disp){
+    container.innerHTML=`<div class="no-disp"><div class="big">⏸️</div><h3>Estás inactivo</h3><p>Activate para empezar a recibir viajes y ganar dinero.</p><button class="btn-activar" onclick="togDisp()">Activarme ahora</button></div>`;
+    return;
+  }
+  if(!viajes.length){
+    container.innerHTML='<div class="empty"><div class="big">🛵</div><p>No hay viajes disponibles ahora.<br/>Cuando lleguen aparecen acá.</p></div>';
+    return;
+  }
+
+  const nuevos = viajes.filter(v=>v.estado==='preparando').length;
+  const bn = document.getElementById('bn');
+  bn.style.display = nuevos>0?'inline-flex':'none';
+  bn.textContent = nuevos;
+
+  container.innerHTML = viajes.map(v => {
+    const cod = genCod(v.id);
+    const hr = new Date(v.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    const earn = Math.round(Number(v.costo_envio||800)*0.7);
+    const comercioNombre = v.comercios?.nombre || 'Comercio';
+    const comercioDir = v.comercios?.direccion || 'Dirección del local';
+
+    if(v.estado==='preparando'){
+      return `<div class="viaje-card nuevo">
+        <div class="v-head">
+          <div><div class="v-num">Viaje #${v.numero||'—'}</div><div class="v-time">${hr} hs</div></div>
+          <span class="v-pill vp-nuevo">Disponible</span>
+        </div>
+        <div class="v-route">
+          <div class="v-stop">
+            <div><div class="v-dot vd-retiro"></div><div class="v-line"></div></div>
+            <div><div class="v-stop-label">Retirás en</div><div class="v-stop-name">${comercioNombre}</div><div class="v-stop-addr">${comercioDir}</div></div>
+          </div>
+          <div class="v-stop">
+            <div><div class="v-dot vd-entrega"></div></div>
+            <div><div class="v-stop-label">Entregás en</div><div class="v-stop-addr">${v.direccion_entrega||'Dirección del cliente'}</div></div>
+          </div>
+        </div>
+        <div class="v-meta">
+          <span class="v-tag vt-earn">Ganás $${earn.toLocaleString('es-AR')}</span>
+          <span class="v-tag vt-dist">~2.5 km</span>
+          <span class="v-tag vt-time">~15 min</span>
+        </div>
+        <div class="v-acts">
+          <button class="btn btn-o" onclick="aceptarViaje('${v.id}')">Aceptar viaje</button>
+          <button class="btn btn-g" onclick="rechazarViaje('${v.id}')">Rechazar</button>
+        </div>
+      </div>`;
+    }
+
+    if(v.estado==='en_camino'){
+      const codOk = codsIngresados[v.id] === cod;
+      return `<div class="viaje-card activo">
+        <div class="v-head">
+          <div><div class="v-num">Viaje #${v.numero||'—'}</div><div class="v-time">${hr} hs</div></div>
+          <span class="v-pill vp-camino">En camino</span>
+        </div>
+        <div class="v-route">
+          <div class="v-stop">
+            <div><div class="v-dot vd-retiro"></div><div class="v-line"></div></div>
+            <div><div class="v-stop-label">Retiraste en</div><div class="v-stop-name">${comercioNombre}</div></div>
+          </div>
+          <div class="v-stop">
+            <div><div class="v-dot vd-entrega"></div></div>
+            <div><div class="v-stop-label">Entregás en</div><div class="v-stop-addr">${v.direccion_entrega||'Dirección del cliente'}</div></div>
+          </div>
+        </div>
+        <div class="v-meta">
+          <span class="v-tag vt-earn">Ganás $${earn.toLocaleString('es-AR')}</span>
+        </div>
+        <div class="cod-box">
+          <div class="cod-title">Código de entrega</div>
+          <div class="cod-desc">Pedile al cliente el código de 4 dígitos que recibió en su app. Ingresalo para confirmar la entrega.</div>
+          <div class="cod-input-row">
+            <input class="cod-digit" id="cod-${v.id}-1" type="number" maxlength="1" min="0" max="9" oninput="moverFoco(this,'cod-${v.id}-2')" onkeyup="checkCod('${v.id}','${cod}')"/>
+            <input class="cod-digit" id="cod-${v.id}-2" type="number" maxlength="1" min="0" max="9" oninput="moverFoco(this,'cod-${v.id}-3')" onkeyup="checkCod('${v.id}','${cod}')"/>
+            <input class="cod-digit" id="cod-${v.id}-3" type="number" maxlength="1" min="0" max="9" oninput="moverFoco(this,'cod-${v.id}-4')" onkeyup="checkCod('${v.id}','${cod}')"/>
+            <input class="cod-digit" id="cod-${v.id}-4" type="number" maxlength="1" min="0" max="9" onkeyup="checkCod('${v.id}','${cod}')"/>
+          </div>
+          <div class="cod-error" id="err-${v.id}">Código incorrecto. Pedile el código al cliente.</div>
+          <div class="cod-ok" id="ok-${v.id}">✅ Código correcto</div>
+          <button class="btn-verificar" id="btn-ver-${v.id}" onclick="verificarEntrega('${v.id}','${cod}')" disabled>Confirmar entrega</button>
+        </div>
+      </div>`;
+    }
+    return '';
+  }).join('');
+}
+
+function moverFoco(el, nextId){
+  el.value = el.value.toString().slice(-1);
+  if(el.value && nextId) document.getElementById(nextId)?.focus();
+}
+
+function checkCod(vid, cod){
+  const d1 = document.getElementById(`cod-${vid}-1`)?.value||'';
+  const d2 = document.getElementById(`cod-${vid}-2`)?.value||'';
+  const d3 = document.getElementById(`cod-${vid}-3`)?.value||'';
+  const d4 = document.getElementById(`cod-${vid}-4`)?.value||'';
+  const ingresado = d1+d2+d3+d4;
+  const btn = document.getElementById(`btn-ver-${vid}`);
+  const err = document.getElementById(`err-${vid}`);
+  const ok = document.getElementById(`ok-${vid}`);
+  if(ingresado.length===4){
+    if(ingresado===cod){
+      btn.disabled=false;
+      err.style.display='none';
+      ok.style.display='block';
+      codsIngresados[vid]=ingresado;
+    } else {
+      btn.disabled=true;
+      err.style.display='block';
+      ok.style.display='none';
+    }
+  } else {
+    btn.disabled=true;
+    err.style.display='none';
+    ok.style.display='none';
+  }
+}
+
+async function aceptarViaje(id){
+  const v = viajes.find(x=>x.id===id);
+  if(v) v.estado='en_camino';
+  try{ await sb.from('pedidos').update({estado:'en_camino'}).eq('id',id); }catch{}
+  renderViajes();
+  toast('✅ Viaje aceptado · Andá a retirar el pedido');
+}
+
+function rechazarViaje(id){
+  viajes = viajes.filter(v=>v.id!==id);
+  renderViajes();
+  toast('Viaje rechazado');
+}
+
+async function verificarEntrega(id, cod){
+  const ingresado = codsIngresados[id];
+  if(ingresado !== cod){ toast('❌ Código incorrecto'); return; }
+  const earn = Math.round(800*0.7);
+  const v = viajes.find(x=>x.id===id);
+  if(v) v.estado='entregado';
+  try{ await sb.from('pedidos').update({estado:'entregado'}).eq('id',id); }catch{}
+  viajes = viajes.filter(x=>x.id!==id);
+  renderViajes();
+  actualizarStats();
+  toast(`🎉 Entrega confirmada · Ganaste $${earn.toLocaleString('es-AR')}`, 3500);
+}
+
+function actualizarStats(){
+  const hoy = viajes.filter(v=>{
+    const d=new Date(v.created_at),n=new Date();
+    return d.getDate()===n.getDate()&&d.getMonth()===n.getMonth();
+  });
+  document.getElementById('s-hoy').textContent = hoy.length;
+  const earn = hoy.length * Math.round(800*0.7);
+  document.getElementById('s-earn').textContent = earn>0?`$${earn.toLocaleString('es-AR')}`:'$0';
+
+  // Ganancias tab
+  document.getElementById('earn-sem').textContent = `$${(viajes.length*700).toLocaleString('es-AR')}`;
+  document.getElementById('eg-viajes').textContent = viajes.length;
+  document.getElementById('eg-prom').textContent = `$700`;
+}
+
+setInterval(cargarViajes, 20000);
+cargarViajes();
+</script>
+</body>
+</html>
