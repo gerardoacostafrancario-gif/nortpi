@@ -564,6 +564,22 @@ async function confirmarPedido() {
   actualizarCartFloat();
   btn.disabled = false;
   btn.textContent = 'Confirmar pedido';
+
+  // Si eligió MercadoPago, redirigir a la página de pago
+  if(payMethod === 'mercadopago') {
+    const items = Object.values(cart).filter(i=>i.qty>0);
+    const sub = items.reduce((s,i)=>s+i.precio*i.qty,0);
+    localStorage.setItem('pap_pedido_pago', JSON.stringify({
+      items: items.map(i=>({nombre:i.nombre,qty:i.qty,precio:i.precio,quantity:i.qty,unit_price:i.precio,title:i.nombre})),
+      total: sub+800,
+      envio: 800,
+      comercio: currentComercio?.nombre||'Comercio',
+    }));
+    localStorage.setItem('pap_pedido_actual', currentPedido?.id||'');
+    window.location.href = 'pago.html';
+    return;
+  }
+
   iniciarTracking();
   go('tracking');
 }
