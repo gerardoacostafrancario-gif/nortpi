@@ -159,14 +159,16 @@ async function iniciarPago(){
       external_reference: pedidoId || Date.now().toString(),
     };
 
-    // Llamar a la API de MP para crear la preferencia
-    const resp = await fetch('https://api.mercadopago.com/checkout/preferences', {
+    // Llamar a la función serverless de Vercel
+    const resp = await fetch('/api/crear-preferencia', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer APP_USR-5574134103320398-040510-f136a745dc822a801c81ca4893b43e1e-3313856142`
-      },
-      body: JSON.stringify(preference)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: items,
+        total: total,
+        pedido_id: pedidoId,
+        comercio: comercioNombre
+      })
     });
 
     if(!resp.ok) throw new Error('Error al crear preferencia');
