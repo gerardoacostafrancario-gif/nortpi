@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Puerta a Puerta — Acceso</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;}
+body{background:#0D0D0D;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.container{width:100%;max-width:360px;padding:20px;}
+.logo-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:32px;}
+.logo-box{width:56px;height:56px;border-radius:16px;background:#FF6B35;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.app-name{font-size:20px;font-weight:900;color:#fff;}
+.app-tag{font-size:11px;color:#555;margin-top:4px;letter-spacing:.06em;text-transform:uppercase;}
+.card{background:#111;border-radius:20px;padding:28px 24px;border:1px solid #1a1a1a;}
+.card-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:4px;}
+.card-sub{font-size:12px;color:#555;margin-bottom:24px;}
+.fg{margin-bottom:14px;}
+.fl{font-size:12px;font-weight:600;color:#666;margin-bottom:5px;display:block;}
+.fi{width:100%;background:#1a1a1a;border:1.5px solid #222;border-radius:10px;padding:11px 14px;font-size:14px;color:#fff;outline:none;}
+.fi:focus{border-color:#FF6B35;}
+.fi::placeholder{color:#444;}
+.btn-login{width:100%;background:#FF6B35;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;}
+.btn-login:disabled{opacity:.4;cursor:not-allowed;}
+.error-msg{background:#3D0D0D;color:#FF5252;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:12px;display:none;}
+.success-msg{background:#0D2E1A;color:#69F0AE;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:12px;display:none;}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo-wrap">
+    <div class="logo-box">
+      <svg width="32" height="32" viewBox="0 0 90 90" fill="none">
+        <path d="M10 36 L45 18 L80 36" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="12" y="36" width="30" height="46" rx="4" fill="#fff" opacity=".9"/>
+        <rect x="48" y="36" width="30" height="46" rx="4" fill="#fff"/>
+        <circle cx="36" cy="59" r="4" fill="#FF6B35"/>
+        <circle cx="54" cy="59" r="4" fill="#FF6B35"/>
+      </svg>
+    </div>
+    <div class="app-name">Puerta a Puerta</div>
+    <div class="app-tag">Acceso administradores</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Panel de administración</div>
+    <div class="card-sub">Acceso restringido. Solo personal autorizado.</div>
+    <div class="fg">
+      <label class="fl">Email</label>
+      <input class="fi" id="email" type="email" placeholder="admin@puertaapuerta.com"/>
+    </div>
+    <div class="fg">
+      <label class="fl">Contraseña</label>
+      <input class="fi" id="pass" type="password" placeholder="••••••••"/>
+    </div>
+    <button class="btn-login" id="btn" onclick="login()">Ingresar</button>
+    <div class="error-msg" id="err"></div>
+    <div class="success-msg" id="ok"></div>
+  </div>
+</div>
+
+<script>
+const SU='https://fmqlpgerqdiplnvjjarl.supabase.co';
+const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtcWxwZ2VycWRpcGxudmpqYXJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MTkwNTYsImV4cCI6MjA5MDQ5NTA1Nn0.r1X4NSX8t-v9EeJQ-eK9DVslIWkpo2_UCn-oRy6k--w';
+const sb=supabase.createClient(SU,SK);
+
+const ADMINS=['gerardoacostafrancario@gmail.com','j.p.torrilla7@hotmail.com'];
+
+function showErr(m){const e=document.getElementById('err');e.textContent=m;e.style.display='block';document.getElementById('ok').style.display='none';}
+function showOk(m){const e=document.getElementById('ok');e.textContent=m;e.style.display='block';document.getElementById('err').style.display='none';}
+
+async function login(){
+  const email=document.getElementById('email').value.trim();
+  const pass=document.getElementById('pass').value;
+  const btn=document.getElementById('btn');
+  if(!email||!pass){showErr('Completá todos los campos.');return;}
+  if(!ADMINS.includes(email)){showErr('No tenés permisos de administrador.');return;}
+  btn.disabled=true;btn.textContent='Verificando...';
+  try{
+    const {error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error) throw error;
+    localStorage.setItem('pap_role','admin');
+    localStorage.setItem('pap_email',email);
+    showOk('✅ Acceso concedido. Redirigiendo...');
+    setTimeout(()=>window.location.href='admin.html',1000);
+  }catch(e){
+    showErr('Email o contraseña incorrectos.');
+    btn.disabled=false;btn.textContent='Ingresar';
+  }
+}
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+
+sb.auth.getSession().then(({data:{session}})=>{
+  if(session&&ADMINS.includes(session.user.email)){
+    window.location.href='admin.html';
+  }
+});
+</script>
+</body>
+</html>
