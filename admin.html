@@ -3,438 +3,100 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<title>Puerta a Puerta — Admin</title>
+<title>Puerta a Puerta — Acceso</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;}
-body{background:#0D0D0D;color:#fff;min-height:100vh;}
-.app{max-width:1200px;margin:0 auto;min-height:100vh;padding-bottom:80px;}
-
-.header{background:#111;padding:16px;display:flex;align-items:center;gap:12px;border-bottom:2px solid #FF6B35;}
-.logo-box{width:40px;height:40px;border-radius:10px;background:#FF6B35;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.header-title{font-size:17px;font-weight:700;color:#fff;}
-.header-sub{font-size:11px;color:#aaa;}
-.admin-badge{margin-left:auto;background:#FF6B35;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;}
-
-.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:14px;}
-.stat-card{background:#111;border-radius:14px;padding:14px;border:1px solid #222;}
-.stat-card.highlight{border-color:#FF6B35;}
-.sc-val{font-size:28px;font-weight:700;color:#fff;margin-bottom:2px;}
-.sc-val.green{color:#00E676;}
-.sc-val.orange{color:#FF6B35;}
-.sc-lbl{font-size:11px;color:#888;}
-.sc-sub{font-size:11px;color:#555;margin-top:4px;}
-
-.tabs{display:flex;border-bottom:1px solid #222;background:#111;position:sticky;top:0;z-index:50;overflow-x:auto;}
-.tab{flex-shrink:0;padding:12px 14px;text-align:center;font-size:12px;font-weight:500;color:#666;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;}
-.tab.active{color:#FF6B35;border-bottom-color:#FF6B35;font-weight:700;}
-
-.sec{display:none;padding:14px;}
-.sec.active{display:block;}
-
-/* CARDS GENERALES */
-.card{background:#111;border-radius:14px;padding:14px;margin-bottom:12px;border:1px solid #1a1a1a;}
-.card-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:12px;}
-
-/* PEDIDOS */
-.ped-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #1a1a1a;}
-.ped-row:last-child{border-bottom:none;}
-.pr-left .pr-num{font-size:13px;font-weight:700;color:#fff;}
-.pr-left .pr-com{font-size:11px;color:#888;margin-top:2px;}
-.pr-left .pr-items{font-size:11px;color:#666;margin-top:2px;}
-.pr-right{text-align:right;}
-.pr-total{font-size:13px;font-weight:700;color:#FF6B35;}
-.pr-time{font-size:10px;color:#666;margin-top:2px;}
-.ep{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;margin-top:4px;display:inline-block;}
-.ep-nuevo{background:#3D1A00;color:#FF6B35;}
-.ep-prep{background:#0D1E3D;color:#64B5F6;}
-.ep-cam{background:#0D2E1A;color:#69F0AE;}
-.ep-done{background:#1a1a1a;color:#888;}
-.ep-can{background:#3D0D0D;color:#FF5252;}
-
-/* COMERCIOS */
-.com-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #1a1a1a;}
-.com-row:last-child{border-bottom:none;}
-.cr-name{font-size:13px;font-weight:700;color:#fff;}
-.cr-cat{font-size:11px;color:#888;margin-top:2px;}
-.cr-meta{font-size:11px;color:#666;margin-top:2px;}
-.cr-right{text-align:right;}
-.cr-estado{font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;}
-.ce-on{background:#0D2E1A;color:#69F0AE;}
-.ce-off{background:#1a1a1a;color:#888;}
-.cr-pedidos{font-size:11px;color:#666;margin-top:4px;}
-.btn-toggle-com{background:#1a1a1a;color:#aaa;border:1px solid #333;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer;margin-top:4px;}
-
-/* CADETES */
-.cad-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #1a1a1a;}
-.cad-row:last-child{border-bottom:none;}
-.cad-av{width:36px;height:36px;border-radius:50%;background:#FF6B35;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;}
-.cad-info{flex:1;margin:0 10px;}
-.cad-name{font-size:13px;font-weight:700;color:#fff;}
-.cad-meta{font-size:11px;color:#888;margin-top:2px;}
-.cad-right{text-align:right;}
-.cad-earn{font-size:13px;font-weight:700;color:#00E676;}
-.cad-viajes{font-size:11px;color:#666;margin-top:2px;}
-.cad-estado{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;margin-top:4px;display:inline-block;}
-.cs-on{background:#0D2E1A;color:#69F0AE;}
-.cs-off{background:#1a1a1a;color:#888;}
-
-/* GANANCIAS */
-.earn-big{background:#111;border-radius:14px;padding:16px;margin-bottom:12px;border:1px solid #FF6B35;}
-.earn-val{font-size:36px;font-weight:900;color:#FF6B35;margin-bottom:4px;}
-.earn-lbl{font-size:12px;color:#888;}
-.earn-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
-.eg{background:#1a1a1a;border-radius:10px;padding:10px 8px;text-align:center;}
-.eg-val{font-size:16px;font-weight:700;color:#fff;}
-.eg-lbl{font-size:10px;color:#666;margin-top:2px;}
-
-.dist-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1a1a1a;font-size:12px;}
-.dist-row:last-child{border-bottom:none;}
-.dist-lbl{color:#888;}
-.dist-val{color:#fff;font-weight:600;}
-.dist-bar-wrap{flex:1;margin:0 12px;height:4px;background:#1a1a1a;border-radius:2px;}
-.dist-bar{height:4px;border-radius:2px;background:#FF6B35;}
-
-/* AJUSTES */
-.cfg-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #1a1a1a;}
-.cfg-row:last-child{border-bottom:none;}
-.cfg-lbl{font-size:13px;color:#fff;}
-.cfg-sub{font-size:11px;color:#666;margin-top:2px;}
-.cfg-val{font-size:13px;font-weight:700;color:#FF6B35;}
-.fi{background:#1a1a1a;border:1px solid #333;border-radius:8px;padding:8px 12px;font-size:13px;color:#fff;outline:none;width:100px;text-align:right;}
+body{background:#0D0D0D;min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.container{width:100%;max-width:360px;padding:20px;}
+.logo-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:32px;}
+.logo-box{width:56px;height:56px;border-radius:16px;background:#FF6B35;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.app-name{font-size:20px;font-weight:900;color:#fff;}
+.app-tag{font-size:11px;color:#555;margin-top:4px;letter-spacing:.06em;text-transform:uppercase;}
+.card{background:#111;border-radius:20px;padding:28px 24px;border:1px solid #1a1a1a;}
+.card-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:4px;}
+.card-sub{font-size:12px;color:#555;margin-bottom:24px;}
+.fg{margin-bottom:14px;}
+.fl{font-size:12px;font-weight:600;color:#666;margin-bottom:5px;display:block;}
+.fi{width:100%;background:#1a1a1a;border:1.5px solid #222;border-radius:10px;padding:11px 14px;font-size:14px;color:#fff;outline:none;}
 .fi:focus{border-color:#FF6B35;}
-.btn-save-cfg{width:100%;background:#FF6B35;color:#fff;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;margin-top:16px;}
-
-.nav{display:flex;justify-content:space-around;padding:10px 0 14px;border-top:1px solid #222;background:#111;position:fixed;bottom:0;width:100%;max-width:1200px;z-index:100;}
-.ni{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
-.ni svg{width:22px;height:22px;}
-.ni span{font-size:10px;color:#555;}
-.ni.active span{color:#FF6B35;font-weight:700;}
-
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#FF6B35;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:999;display:none;white-space:nowrap;}
-
-.section-label{font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.08em;margin:6px 0 10px;}
+.fi::placeholder{color:#444;}
+.btn-login{width:100%;background:#FF6B35;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px;}
+.btn-login:disabled{opacity:.4;cursor:not-allowed;}
+.error-msg{background:#3D0D0D;color:#FF5252;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:12px;display:none;}
+.success-msg{background:#0D2E1A;color:#69F0AE;border-radius:10px;padding:10px 14px;font-size:13px;margin-top:12px;display:none;}
 </style>
 </head>
 <body>
-<div class="app">
-<div class="toast" id="toast"></div>
-
-<div class="header">
-  <div class="logo-box">
-    <svg width="24" height="24" viewBox="0 0 90 90" fill="none">
-      <path d="M10 36 L45 18 L80 36" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-      <rect x="12" y="36" width="30" height="46" rx="4" fill="#fff" opacity=".9"/>
-      <rect x="48" y="36" width="30" height="46" rx="4" fill="#fff"/>
-    </svg>
-  </div>
-  <div>
-    <div class="header-title">Panel de administración</div>
-    <div class="header-sub">Puerta a Puerta · Santiago del Estero</div>
-  </div>
-  <div class="admin-badge">Gerardo</div>
-</div>
-
-<!-- STATS -->
-<div class="stats-grid">
-  <div class="stat-card highlight">
-    <div class="sc-val orange" id="st-hoy">0</div>
-    <div class="sc-lbl">Pedidos hoy</div>
-    <div class="sc-sub" id="st-hoy-sub">$0 facturado</div>
-  </div>
-  <div class="stat-card">
-    <div class="sc-val green" id="st-ganancia">$0</div>
-    <div class="sc-lbl">Ganancia hoy (neta)</div>
-    <div class="sc-sub">Comisiones cobradas</div>
-  </div>
-  <div class="stat-card">
-    <div class="sc-val" id="st-comercios">0</div>
-    <div class="sc-lbl">Comercios activos</div>
-    <div class="sc-sub" id="st-com-open">0 abiertos ahora</div>
-  </div>
-  <div class="stat-card">
-    <div class="sc-val" id="st-cadetes">0</div>
-    <div class="sc-lbl">Cadetes disponibles</div>
-    <div class="sc-sub" id="st-cad-sub">En la red ahora</div>
-  </div>
-</div>
-
-<!-- TABS -->
-<div class="tabs">
-  <div class="tab active" id="tab-p" onclick="stab('p')">Pedidos</div>
-  <div class="tab" id="tab-c" onclick="stab('c')">Comercios</div>
-  <div class="tab" id="tab-k" onclick="stab('k')">Cadetes</div>
-  <div class="tab" id="tab-g" onclick="stab('g')">Ganancias</div>
-  <div class="tab" id="tab-a" onclick="stab('a')">Ajustes</div>
-</div>
-
-<!-- PEDIDOS -->
-<div class="sec active" id="sec-p">
-  <div class="section-label">Todos los pedidos</div>
-  <div class="card">
-    <div id="peds-container"><div style="text-align:center;padding:30px;color:#555;">Cargando pedidos...</div></div>
-  </div>
-</div>
-
-<!-- COMERCIOS -->
-<div class="sec" id="sec-c">
-  <div class="section-label">Comercios registrados</div>
-  <div class="card">
-    <div id="coms-container"><div style="text-align:center;padding:30px;color:#555;">Cargando...</div></div>
-  </div>
-</div>
-
-<!-- CADETES -->
-<div class="sec" id="sec-k">
-  <div class="section-label">Red de cadetes</div>
-  <div class="card">
-    <div id="cads-container"><div style="text-align:center;padding:30px;color:#555;">Cargando...</div></div>
-  </div>
-</div>
-
-<!-- GANANCIAS -->
-<div class="sec" id="sec-g">
-  <div class="earn-big">
-    <div class="earn-lbl">Ganancia total del mes</div>
-    <div class="earn-val" id="earn-mes">$0</div>
-    <div class="earn-grid">
-      <div class="eg"><div class="eg-val" id="eg-pedidos">0</div><div class="eg-lbl">Pedidos</div></div>
-      <div class="eg"><div class="eg-val" id="eg-com">$0</div><div class="eg-lbl">Comisiones</div></div>
-      <div class="eg"><div class="eg-val" id="eg-envio">$0</div><div class="eg-lbl">Envíos</div></div>
+<div class="container">
+  <div class="logo-wrap">
+    <div class="logo-box">
+      <svg width="32" height="32" viewBox="0 0 90 90" fill="none">
+        <path d="M10 36 L45 18 L80 36" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="12" y="36" width="30" height="46" rx="4" fill="#fff" opacity=".9"/>
+        <rect x="48" y="36" width="30" height="46" rx="4" fill="#fff"/>
+        <circle cx="36" cy="59" r="4" fill="#FF6B35"/>
+        <circle cx="54" cy="59" r="4" fill="#FF6B35"/>
+      </svg>
     </div>
+    <div class="app-name">Puerta a Puerta</div>
+    <div class="app-tag">Acceso administradores</div>
   </div>
-  <div class="card">
-    <div class="card-title">Distribución por rubro</div>
-    <div id="dist-container"></div>
-  </div>
-  <div class="card">
-    <div class="card-title">Comparativa semanal</div>
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:flex-end;height:80px;margin-top:8px;" id="chart-sem"></div>
-    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:4px;">
-      <div style="font-size:9px;color:#555;text-align:center;">L</div>
-      <div style="font-size:9px;color:#555;text-align:center;">M</div>
-      <div style="font-size:9px;color:#555;text-align:center;">X</div>
-      <div style="font-size:9px;color:#555;text-align:center;">J</div>
-      <div style="font-size:9px;color:#555;text-align:center;">V</div>
-      <div style="font-size:9px;color:#555;text-align:center;">S</div>
-      <div style="font-size:9px;color:#555;text-align:center;">D</div>
-    </div>
-  </div>
-</div>
 
-<!-- AJUSTES -->
-<div class="sec" id="sec-a">
   <div class="card">
-    <div class="card-title">Comisiones</div>
-    <div class="cfg-row">
-      <div><div class="cfg-lbl">Comisión a comercios</div><div class="cfg-sub">% sobre cada pedido</div></div>
-      <input class="fi" id="cfg-com" type="number" value="12" min="1" max="30"/>
+    <div class="card-title">Panel de administración</div>
+    <div class="card-sub">Acceso restringido. Solo personal autorizado.</div>
+    <div class="fg">
+      <label class="fl">Email</label>
+      <input class="fi" id="email" type="email" placeholder="admin@puertaapuerta.com"/>
     </div>
-    <div class="cfg-row">
-      <div><div class="cfg-lbl">Comisión de envío para cadete</div><div class="cfg-sub">% del costo de envío</div></div>
-      <input class="fi" id="cfg-cad" type="number" value="70" min="50" max="90"/>
+    <div class="fg">
+      <label class="fl">Contraseña</label>
+      <input class="fi" id="pass" type="password" placeholder="••••••••"/>
     </div>
-    <div class="cfg-row">
-      <div><div class="cfg-lbl">Ganancia Puerta a Puerta por envío</div><div class="cfg-sub">% del costo de envío</div></div>
-      <div class="cfg-val" id="cfg-pap-earn">30%</div>
-    </div>
+    <button class="btn-login" id="btn" onclick="login()">Ingresar</button>
+    <div class="error-msg" id="err"></div>
+    <div class="success-msg" id="ok"></div>
   </div>
-  <div class="card">
-    <div class="card-title">Precios de envío por distancia</div>
-    <div class="cfg-row"><div><div class="cfg-lbl">Hasta 1 km</div></div><input class="fi" id="e1" type="number" value="600"/></div>
-    <div class="cfg-row"><div><div class="cfg-lbl">1 a 2 km</div></div><input class="fi" id="e2" type="number" value="800"/></div>
-    <div class="cfg-row"><div><div class="cfg-lbl">2 a 3 km</div></div><input class="fi" id="e3" type="number" value="1000"/></div>
-    <div class="cfg-row"><div><div class="cfg-lbl">3 a 5 km</div></div><input class="fi" id="e4" type="number" value="1300"/></div>
-    <div class="cfg-row"><div><div class="cfg-lbl">5 a 8 km</div></div><input class="fi" id="e5" type="number" value="1700"/></div>
-    <div class="cfg-row"><div><div class="cfg-lbl">Más de 8 km</div></div><input class="fi" id="e6" type="number" value="2200"/></div>
-  </div>
-  <div class="card">
-    <div class="card-title">Configuración general</div>
-    <div class="cfg-row">
-      <div><div class="cfg-lbl">Minutos espera cadete (híbrido)</div><div class="cfg-sub">Antes de buscar en la red</div></div>
-      <input class="fi" id="cfg-min" type="number" value="10"/>
-    </div>
-    <div class="cfg-row">
-      <div><div class="cfg-lbl">Radio máximo de entrega (km)</div></div>
-      <input class="fi" id="cfg-rad" type="number" value="10"/>
-    </div>
-  </div>
-  <button class="btn-save-cfg" onclick="guardarAjustes()">Guardar todos los ajustes</button>
-
-  <div class="card" style="margin-top:16px;">
-    <div class="card-title">Links de acceso</div>
-    <div class="cfg-row"><div><div class="cfg-lbl">App del usuario</div><div class="cfg-sub" style="color:#FF6B35;">puertaapuerta.vercel.app</div></div></div>
-    <div class="cfg-row"><div><div class="cfg-lbl">Panel del comercio</div><div class="cfg-sub" style="color:#FF6B35;">puertaapuerta.vercel.app/comercio.html</div></div></div>
-    <div class="cfg-row"><div><div class="cfg-lbl">Panel del cadete</div><div class="cfg-sub" style="color:#FF6B35;">puertaapuerta.vercel.app/cadete.html</div></div></div>
-    <div class="cfg-row" style="border:none;"><div><div class="cfg-lbl">Panel de admin</div><div class="cfg-sub" style="color:#FF6B35;">puertaapuerta.vercel.app/admin.html</div></div></div>
-  </div>
-</div>
-
-<div class="nav">
-  <div class="ni active" id="ni-p" onclick="stab('p');aN('ni-p')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
-    <span>Pedidos</span>
-  </div>
-  <div class="ni" id="ni-c" onclick="stab('c');aN('ni-c')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-    <span>Comercios</span>
-  </div>
-  <div class="ni" id="ni-k" onclick="stab('k');aN('ni-k')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    <span>Cadetes</span>
-  </div>
-  <div class="ni" id="ni-g" onclick="stab('g');aN('ni-g')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-    <span>Ganancias</span>
-  </div>
-  <div class="ni" id="ni-a" onclick="stab('a');aN('ni-a')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-    <span>Ajustes</span>
-  </div>
-</div>
 </div>
 
 <script>
 const SU='https://fmqlpgerqdiplnvjjarl.supabase.co';
 const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtcWxwZ2VycWRpcGxudmpqYXJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MTkwNTYsImV4cCI6MjA5MDQ5NTA1Nn0.r1X4NSX8t-v9EeJQ-eK9DVslIWkpo2_UCn-oRy6k--w';
 const sb=supabase.createClient(SU,SK);
-let peds=[],coms=[],cads=[];
 
-function toast(m,d=2500){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',d);}
-function stab(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');document.getElementById('sec-'+tab).classList.add('active');}
-function aN(id){document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));document.getElementById(id).classList.add('active');}
+const ADMINS=['gerardoacostafrancario@gmail.com','j.p.torrilla7@hotmail.com'];
 
-async function cargarTodo(){
-  await Promise.all([cargarPeds(),cargarComs(),cargarCads()]);
-  actualizarStats();
-  renderGanancias();
+function showErr(m){const e=document.getElementById('err');e.textContent=m;e.style.display='block';document.getElementById('ok').style.display='none';}
+function showOk(m){const e=document.getElementById('ok');e.textContent=m;e.style.display='block';document.getElementById('err').style.display='none';}
+
+async function login(){
+  const email=document.getElementById('email').value.trim();
+  const pass=document.getElementById('pass').value;
+  const btn=document.getElementById('btn');
+  if(!email||!pass){showErr('Completá todos los campos.');return;}
+  if(!ADMINS.includes(email)){showErr('No tenés permisos de administrador.');return;}
+  btn.disabled=true;btn.textContent='Verificando...';
+  try{
+    const {error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error) throw error;
+    localStorage.setItem('pap_role','admin');
+    localStorage.setItem('pap_email',email);
+    showOk('✅ Acceso concedido. Redirigiendo...');
+    setTimeout(()=>window.location.href='admin.html',1000);
+  }catch(e){
+    showErr('Email o contraseña incorrectos.');
+    btn.disabled=false;btn.textContent='Ingresar';
+  }
 }
 
-async function cargarPeds(){
-  try{const{data}=await sb.from('pedidos').select('*,comercios(nombre)').order('created_at',{ascending:false}).limit(30);peds=data||[];}
-  catch{peds=[
-    {id:'p1',numero:1001,estado:'nuevo',total:4900,created_at:new Date().toISOString(),comercios:{nombre:'La Piola Pizzería'},items:[{nombre:'Pizza Muzarella',qty:1}]},
-    {id:'p2',numero:1002,estado:'preparando',total:3600,created_at:new Date(Date.now()-1200000).toISOString(),comercios:{nombre:'Carnicería El Norte'},items:[{nombre:'Milanesas 1kg',qty:1}]},
-    {id:'p3',numero:1003,estado:'entregado',total:2800,created_at:new Date(Date.now()-3600000).toISOString(),comercios:{nombre:'Farmacia Del Centro'},items:[{nombre:'Ibuprofeno',qty:2}]},
-  ];}
-  renderPeds();
-}
+document.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
 
-async function cargarComs(){
-  try{const{data}=await sb.from('comercios').select('*').order('total_pedidos',{ascending:false});coms=data||[];}
-  catch{coms=[
-    {id:'c1',nombre:'La Piola Pizzería',categoria:'comida',abierto_ahora:true,rating:4.8,total_pedidos:142},
-    {id:'c2',nombre:'Carnicería El Norte',categoria:'carniceria',abierto_ahora:true,rating:4.7,total_pedidos:98},
-    {id:'c3',nombre:'Farmacia Del Centro',categoria:'farmacia',abierto_ahora:false,rating:4.9,total_pedidos:201},
-    {id:'c4',nombre:'Almacén Don José',categoria:'almacen',abierto_ahora:true,rating:4.5,total_pedidos:87},
-  ];}
-  renderComs();
-}
-
-async function cargarCads(){
-  try{const{data}=await sb.from('cadetes').select('*').order('total_viajes',{ascending:false});cads=data||[];}
-  catch{cads=[
-    {id:'k1',nombre:'Miguel González',vehiculo:'moto',disponible:true,activo:true,rating:4.9,total_viajes:234,ganancias_semana:32000},
-    {id:'k2',nombre:'Carlos Soria',vehiculo:'moto',disponible:false,activo:true,rating:4.7,total_viajes:189,ganancias_semana:28000},
-    {id:'k3',nombre:'Ana Juárez',vehiculo:'bici',disponible:true,activo:true,rating:4.8,total_viajes:156,ganancias_semana:21000},
-  ];}
-  renderCads();
-}
-
-function renderPeds(){
-  const eL={nuevo:'Nuevo',preparando:'Preparando',en_camino:'En camino',entregado:'Entregado',cancelado:'Cancelado'};
-  const eC={nuevo:'ep-nuevo',preparando:'ep-prep',en_camino:'ep-cam',entregado:'ep-done',cancelado:'ep-can'};
-  if(!peds.length){document.getElementById('peds-container').innerHTML='<div style="text-align:center;padding:30px;color:#555;">Sin pedidos todavía.</div>';return;}
-  document.getElementById('peds-container').innerHTML=peds.map(p=>{
-    const its=(Array.isArray(p.items)?p.items:[]).map(i=>i.nombre).join(', ');
-    const hr=new Date(p.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    return`<div class="ped-row"><div class="pr-left"><div class="pr-num">#${p.numero||'—'} · ${p.comercios?.nombre||'Comercio'}</div><div class="pr-items">${its}</div></div><div class="pr-right"><div class="pr-total">$${Number(p.total||0).toLocaleString('es-AR')}</div><div class="pr-time">${hr} hs</div><span class="ep ${eC[p.estado]||'ep-nuevo'}">${eL[p.estado]||'Nuevo'}</span></div></div>`;
-  }).join('');
-}
-
-function renderComs(){
-  if(!coms.length){document.getElementById('coms-container').innerHTML='<div style="text-align:center;padding:30px;color:#555;">Sin comercios.</div>';return;}
-  document.getElementById('coms-container').innerHTML=coms.map(c=>`
-    <div class="com-row">
-      <div><div class="cr-name">${c.nombre}</div><div class="cr-cat">${c.categoria} · ⭐ ${c.rating}</div><div class="cr-meta">${c.total_pedidos} pedidos totales</div></div>
-      <div class="cr-right">
-        <span class="cr-estado ${c.abierto_ahora?'ce-on':'ce-off'}">${c.abierto_ahora?'Abierto':'Cerrado'}</span>
-        <button class="btn-toggle-com" onclick="toggleCom('${c.id}',${!c.abierto_ahora})">${c.abierto_ahora?'Cerrar':'Abrir'}</button>
-      </div>
-    </div>`).join('');
-}
-
-function renderCads(){
-  if(!cads.length){document.getElementById('cads-container').innerHTML='<div style="text-align:center;padding:30px;color:#555;">Sin cadetes registrados.</div>';return;}
-  document.getElementById('cads-container').innerHTML=cads.map(c=>`
-    <div class="cad-row">
-      <div class="cad-av">${c.nombre.split(' ').map(n=>n[0]).join('').slice(0,2)}</div>
-      <div class="cad-info"><div class="cad-name">${c.nombre}</div><div class="cad-meta">${c.vehiculo} · ⭐ ${c.rating} · ${c.total_viajes} viajes</div></div>
-      <div class="cad-right">
-        <div class="cad-earn">$${Number(c.ganancias_semana||0).toLocaleString('es-AR')}</div>
-        <div class="cad-viajes">Esta semana</div>
-        <span class="cad-estado ${c.disponible?'cs-on':'cs-off'}">${c.disponible?'Disponible':'Inactivo'}</span>
-      </div>
-    </div>`).join('');
-}
-
-function actualizarStats(){
-  const hoy=peds.filter(p=>{const d=new Date(p.created_at),n=new Date();return d.getDate()===n.getDate()&&d.getMonth()===n.getMonth();});
-  const facturado=hoy.reduce((s,p)=>s+Number(p.total||0),0);
-  const ganancia=Math.round(facturado*0.12);
-  document.getElementById('st-hoy').textContent=hoy.length;
-  document.getElementById('st-hoy-sub').textContent=`$${facturado.toLocaleString('es-AR')} facturado`;
-  document.getElementById('st-ganancia').textContent=`$${ganancia.toLocaleString('es-AR')}`;
-  document.getElementById('st-comercios').textContent=coms.length;
-  document.getElementById('st-com-open').textContent=`${coms.filter(c=>c.abierto_ahora).length} abiertos ahora`;
-  document.getElementById('st-cadetes').textContent=cads.filter(c=>c.disponible).length;
-}
-
-function renderGanancias(){
-  const total=peds.reduce((s,p)=>s+Number(p.total||0),0);
-  const comis=Math.round(total*0.12);
-  const envios=peds.length*300;
-  document.getElementById('earn-mes').textContent=`$${(comis+envios).toLocaleString('es-AR')}`;
-  document.getElementById('eg-pedidos').textContent=peds.length;
-  document.getElementById('eg-com').textContent=`$${comis.toLocaleString('es-AR')}`;
-  document.getElementById('eg-envio').textContent=`$${envios.toLocaleString('es-AR')}`;
-
-  const rubros=[{l:'Comida',p:45},{l:'Carnicería',p:20},{l:'Farmacia',p:18},{l:'Almacén',p:10},{l:'Otros',p:7}];
-  document.getElementById('dist-container').innerHTML=rubros.map(r=>`
-    <div class="dist-row">
-      <div class="dist-lbl">${r.l}</div>
-      <div class="dist-bar-wrap"><div class="dist-bar" style="width:${r.p}%"></div></div>
-      <div class="dist-val">${r.p}%</div>
-    </div>`).join('');
-
-  const vals=[12,18,9,22,31,45,28];
-  const max=Math.max(...vals);
-  document.getElementById('chart-sem').innerHTML=vals.map((v,i)=>`
-    <div style="display:flex;flex-direction:column;justify-content:flex-end;height:100%;">
-      <div style="background:${i===5?'#FF6B35':'#2a2a2a'};border-radius:4px 4px 0 0;height:${Math.round(v/max*100)}%;min-height:4px;"></div>
-    </div>`).join('');
-}
-
-async function toggleCom(id,estado){
-  const c=coms.find(x=>x.id===id);if(c)c.abierto_ahora=estado;
-  try{await sb.from('comercios').update({abierto_ahora:estado}).eq('id',id);}catch{}
-  renderComs();actualizarStats();
-  toast(estado?'✅ Comercio abierto':'🔒 Comercio cerrado');
-}
-
-function guardarAjustes(){
-  const com=document.getElementById('cfg-com').value;
-  const cad=document.getElementById('cfg-cad').value;
-  document.getElementById('cfg-pap-earn').textContent=`${100-parseInt(cad)}%`;
-  toast('✅ Ajustes guardados correctamente');
-}
-
-document.getElementById('cfg-cad').addEventListener('input',function(){
-  document.getElementById('cfg-pap-earn').textContent=`${100-parseInt(this.value||70)}%`;
+sb.auth.getSession().then(({data:{session}})=>{
+  if(session&&ADMINS.includes(session.user.email)){
+    window.location.href='admin.html';
+  }
 });
-
-setInterval(cargarTodo,30000);
-cargarTodo();
 </script>
 </body>
 </html>
