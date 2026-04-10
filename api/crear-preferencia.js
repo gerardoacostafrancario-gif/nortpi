@@ -46,7 +46,7 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer APP_USR-5574134103320398-040510-f136a745dc822a801c81ca4893b43e1e-3313856142`
+        'Authorization': `Bearer APP_USR-3886989011728021-041010-b4ca94496145ed8591fb06011f088670-3326848249`
       },
       body: JSON.stringify(preference)
     });
