@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     const subtotal = parseFloat(total) || 1000;
     const envio = parseFloat(costo_envio) || 800;
     const comision_pap = Math.round(subtotal * 0.12); // 12% para Puerta a Puerta
-    const ganancia_envio = Math.round(envio * 0.30); // 30% del envío para Puerta a Puerta
+    const ganancia_envio = Math.round(envio * 0.25); // 25% del envío para Puerta a Puerta
     const marketplace_fee = comision_pap + ganancia_envio;
 
     // Construir items
