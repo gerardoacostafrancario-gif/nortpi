@@ -13,7 +13,7 @@ export default async function handler(req, res) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        client_secret: 'APP_USR-3886989011728021-041010-b4ca94496145ed8591fb06011f088670-3326848249',
+        client_secret: 'PiOmIEzYVwJ3UvQMulh707aN4nBeUW7r',
         client_id: '3886989011728021',
         grant_type: 'authorization_code',
         code: code,
