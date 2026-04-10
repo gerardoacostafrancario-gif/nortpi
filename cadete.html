@@ -266,7 +266,7 @@ function renderViajes(){
   container.innerHTML = viajes.map(v => {
     const cod = genCod(v.id);
     const hr = new Date(v.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    const earn = Math.round(Number(v.costo_envio||800)*0.7);
+    const earn = Math.round(Number(v.costo_envio||800)*0.75);
     const comercioNombre = v.comercios?.nombre || 'Comercio';
     const comercioDir = v.comercios?.direccion || 'Dirección del local';
 
@@ -386,7 +386,7 @@ function rechazarViaje(id){
 async function verificarEntrega(id, cod){
   const ingresado = codsIngresados[id];
   if(ingresado !== cod){ toast('❌ Código incorrecto'); return; }
-  const earn = Math.round(800*0.7);
+  const earn = Math.round(800*0.75);
   const v = viajes.find(x=>x.id===id);
   if(v) v.estado='entregado';
   try{ await sb.from('pedidos').update({estado:'entregado'}).eq('id',id); }catch{}
@@ -402,11 +402,11 @@ function actualizarStats(){
     return d.getDate()===n.getDate()&&d.getMonth()===n.getMonth();
   });
   document.getElementById('s-hoy').textContent = hoy.length;
-  const earn = hoy.length * Math.round(800*0.7);
+  const earn = hoy.length * Math.round(800*0.75);
   document.getElementById('s-earn').textContent = earn>0?`$${earn.toLocaleString('es-AR')}`:'$0';
 
   // Ganancias tab
-  document.getElementById('earn-sem').textContent = `$${(viajes.length*700).toLocaleString('es-AR')}`;
+  document.getElementById('earn-sem').textContent = `$${(viajes.length*750).toLocaleString('es-AR')}`;
   document.getElementById('eg-viajes').textContent = viajes.length;
   document.getElementById('eg-prom').textContent = `$700`;
 }
