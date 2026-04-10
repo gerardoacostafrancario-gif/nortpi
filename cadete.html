@@ -427,7 +427,15 @@ function actualizarStats(){
 }
 
 setInterval(cargarViajes, 20000);
-cargarViajes();
+
+// PROTECCIÓN — verificar sesión activa
+sb.auth.getSession().then(({data:{session}}) => {
+  if(!session) {
+    window.location.href = '/login.html';
+  } else {
+    cargarViajes();
+  }
+});
 
 function conectarMPCadete(){
   const CLIENT_ID = '3886989011728021';
