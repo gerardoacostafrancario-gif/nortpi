@@ -497,7 +497,7 @@ async function cargarComercios() {
       {id:'1',nombre:'Restaurante Central',categoria:'comida',imagen_url:'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600&q=80',rating:4.8,total_pedidos:142,abierto_ahora:true},
       {id:'2',nombre:'Carnicería',categoria:'carniceria',imagen_url:'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=600&q=80',rating:4.7,total_pedidos:98,abierto_ahora:true},
       {id:'3',nombre:'Farmacia',categoria:'farmacia',imagen_url:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&q=80',rating:4.9,total_pedidos:201,abierto_ahora:true},
-      {id:'4',nombre:'Supermercado',categoria:'supermercado',imagen_url:'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80',rating:4.5,total_pedidos:87,abierto_ahora:true},
+      {id:'4',nombre:'Supermercado',categoria:'supermercado',imagen_url:'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=600&q=80',rating:4.5,total_pedidos:87,abierto_ahora:true},
       {id:'5',nombre:'Panadería',categoria:'panaderia',imagen_url:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80',rating:4.8,total_pedidos:175,abierto_ahora:true},
       {id:'6',nombre:'Verdulería',categoria:'verduleria',imagen_url:'https://images.unsplash.com/photo-1518843875459-f738682238a6?w=600&q=80',rating:4.6,total_pedidos:63,abierto_ahora:true},
       {id:'6',nombre:'Restaurante',categoria:'comida',imagen_url:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80',rating:4.6,total_pedidos:110,abierto_ahora:true},
@@ -512,7 +512,7 @@ async function cargarComercios() {
 // RUBROS — cards del home
 const RUBROS = [
   {id:'comida',      label:'Restaurantes',  emoji:'🍽️', img:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80'},
-  {id:'supermercado',label:'Supermercado',  emoji:'🛒', img:'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80'},
+  {id:'supermercado',label:'Supermercado',  emoji:'🛒', img:'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=600&q=80'},
   {id:'verduleria',  label:'Verdulería',    emoji:'🥦', img:'https://images.unsplash.com/photo-1518843875459-f738682238a6?w=600&q=80'},
   {id:'heladeria',   label:'Heladería',     emoji:'🍦', img:'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=600&q=80'},
   {id:'mascotas',    label:'Mascotas',      emoji:'🐾', img:'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80'},
@@ -574,7 +574,7 @@ function renderComercios(lista) {
   // solo usado en búsqueda
   const tiempos = {comida:'20–30',carniceria:'15–25',farmacia:'10–20',supermercado:'25–35',verduleria:'20–30',panaderia:'10–20',heladeria:'15–25',bebidas:'10–20',mascotas:'20–30'};
   const envios  = {comida:'$800',carniceria:'$600',farmacia:'$700',supermercado:'$1.000',verduleria:'$800',panaderia:'$600',heladeria:'$600',bebidas:'$500',mascotas:'$700'};
-  const imgFallback = {comida:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80',carniceria:'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=600&q=80',farmacia:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&q=80',supermercado:'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80',panaderia:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80',heladeria:'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=600&q=80',bebidas:'https://images.unsplash.com/photo-1437418747212-8d9709afab22?w=600&q=80',mascotas:'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80'};
+  const imgFallback = {comida:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80',carniceria:'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=600&q=80',farmacia:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&q=80',supermercado:'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=600&q=80',verduleria:'https://images.unsplash.com/photo-1518843875459-f738682238a6?w=600&q=80',panaderia:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80',heladeria:'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=600&q=80',bebidas:'https://images.unsplash.com/photo-1437418747212-8d9709afab22?w=600&q=80',mascotas:'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80'};
   if (!lista.length) {
     document.getElementById('comercios-container').innerHTML = '<div class="empty"><div class="big">🔍</div><p>No encontramos resultados.</p></div>';
     return;
