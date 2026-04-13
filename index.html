@@ -37,11 +37,13 @@
   --shadow-lg:0 8px 32px rgba(0,0,0,.14);
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Plus Jakarta Sans',Arial,sans-serif;-webkit-tap-highlight-color:transparent;}
-body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;}
-.app{max-width:430px;width:100%;min-height:100vh;background:var(--gray-50);position:relative;}
-.screen{display:none;min-height:100vh;padding-bottom:76px;overflow-x:hidden;}
+body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;overflow-x:hidden;}
+.app{max-width:430px;width:100%;min-height:100vh;background:var(--gray-50);position:relative;overflow-x:hidden;}
+.screen{display:none;min-height:100vh;padding-bottom:76px;}
 .screen.active{display:block;}
-.cats{display:flex;gap:8px;padding:14px 18px 10px;overflow-x:auto!important;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;max-width:100%;}
+.cats-wrap{width:100%;overflow-x:auto;overflow-y:visible;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:14px 0 10px;}
+.cats-wrap::-webkit-scrollbar{display:none;}
+.cats{display:inline-flex;gap:8px;padding:0 18px;flex-wrap:nowrap;white-space:nowrap;}
 
 /* ─── HEADER ─── */
 .hero{background:var(--black);padding:20px 18px 18px;}
@@ -279,17 +281,19 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;}
       </div>
     </div>
   </div>
-  <div class="cats" id="cats-row">
-    <div class="cat active" onclick="filtrar(this,'todos')">Todos</div>
-    <div class="cat" onclick="filtrar(this,'comida')">🍽️ Restaurantes</div>
-    <div class="cat" onclick="filtrar(this,'supermercado')">🛒 Súper</div>
-    <div class="cat" onclick="filtrar(this,'heladeria')">🍦 Heladería</div>
-    <div class="cat" onclick="filtrar(this,'mascotas')">🐾 Mascotas</div>
-    <div class="cat" onclick="filtrar(this,'bebidas')">🥤 Bebidas</div>
-    <div class="cat" onclick="filtrar(this,'carniceria')">🥩 Carnicería</div>
-    <div class="cat" onclick="filtrar(this,'farmacia')">💊 Farmacia</div>
-    <div class="cat" onclick="filtrar(this,'panaderia')">🍞 Panadería</div>
-    <div style="flex-shrink:0;width:6px;"></div>
+  <div class="cats-wrap">
+    <div class="cats" id="cats-row">
+      <div class="cat active" onclick="filtrar(this,'todos')">Todos</div>
+      <div class="cat" onclick="filtrar(this,'comida')">🍽️ Restaurantes</div>
+      <div class="cat" onclick="filtrar(this,'supermercado')">🛒 Súper</div>
+      <div class="cat" onclick="filtrar(this,'verduleria')">🥦 Verdulería</div>
+      <div class="cat" onclick="filtrar(this,'heladeria')">🍦 Heladería</div>
+      <div class="cat" onclick="filtrar(this,'mascotas')">🐾 Mascotas</div>
+      <div class="cat" onclick="filtrar(this,'bebidas')">🥤 Bebidas</div>
+      <div class="cat" onclick="filtrar(this,'carniceria')">🥩 Carnicería</div>
+      <div class="cat" onclick="filtrar(this,'farmacia')">💊 Farmacia</div>
+      <div class="cat" onclick="filtrar(this,'panaderia')">🍞 Panadería</div>
+    </div>
   </div>
   <div style="margin:14px 18px 10px;border-radius:var(--radius-lg);overflow:hidden;position:relative;height:100px;cursor:pointer;">
     <img src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=700&q=80" alt="Cerca tuyo" style="width:100%;height:100%;object-fit:cover;display:block;"/>
@@ -495,6 +499,7 @@ async function cargarComercios() {
       {id:'3',nombre:'Farmacia',categoria:'farmacia',imagen_url:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&q=80',rating:4.9,total_pedidos:201,abierto_ahora:true},
       {id:'4',nombre:'Supermercado',categoria:'supermercado',imagen_url:'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80',rating:4.5,total_pedidos:87,abierto_ahora:true},
       {id:'5',nombre:'Panadería',categoria:'panaderia',imagen_url:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80',rating:4.8,total_pedidos:175,abierto_ahora:true},
+      {id:'6',nombre:'Verdulería',categoria:'verduleria',imagen_url:'https://images.unsplash.com/photo-1518843875459-f738682238a6?w=600&q=80',rating:4.6,total_pedidos:63,abierto_ahora:true},
       {id:'6',nombre:'Restaurante',categoria:'comida',imagen_url:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80',rating:4.6,total_pedidos:110,abierto_ahora:true},
       {id:'7',nombre:'Heladería',categoria:'heladeria',imagen_url:'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=600&q=80',rating:4.8,total_pedidos:95,abierto_ahora:true},
       {id:'8',nombre:'Bebidas & Licorería',categoria:'bebidas',imagen_url:'https://images.unsplash.com/photo-1437418747212-8d9709afab22?w=600&q=80',rating:4.5,total_pedidos:78,abierto_ahora:true},
@@ -506,14 +511,15 @@ async function cargarComercios() {
 
 // RUBROS — cards del home
 const RUBROS = [
-  {id:'comida',     label:'Restaurantes',  emoji:'🍽️', img:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80'},
-  {id:'supermercado',label:'Supermercado', emoji:'🛒', img:'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80'},
-  {id:'heladeria',  label:'Heladería',     emoji:'🍦', img:'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=600&q=80'},
-  {id:'mascotas',   label:'Mascotas',      emoji:'🐾', img:'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80'},
-  {id:'bebidas',    label:'Bebidas',       emoji:'🥤', img:'https://images.unsplash.com/photo-1437418747212-8d9709afab22?w=600&q=80'},
-  {id:'carniceria', label:'Carnicería',    emoji:'🥩', img:'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=600&q=80'},
-  {id:'farmacia',   label:'Farmacia',      emoji:'💊', img:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&q=80'},
-  {id:'panaderia',  label:'Panadería',     emoji:'🍞', img:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80'},
+  {id:'comida',      label:'Restaurantes',  emoji:'🍽️', img:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80'},
+  {id:'supermercado',label:'Supermercado',  emoji:'🛒', img:'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80'},
+  {id:'verduleria',  label:'Verdulería',    emoji:'🥦', img:'https://images.unsplash.com/photo-1518843875459-f738682238a6?w=600&q=80'},
+  {id:'heladeria',   label:'Heladería',     emoji:'🍦', img:'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=600&q=80'},
+  {id:'mascotas',    label:'Mascotas',      emoji:'🐾', img:'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80'},
+  {id:'bebidas',     label:'Bebidas',       emoji:'🥤', img:'https://images.unsplash.com/photo-1437418747212-8d9709afab22?w=600&q=80'},
+  {id:'carniceria',  label:'Carnicería',    emoji:'🥩', img:'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=600&q=80'},
+  {id:'farmacia',    label:'Farmacia',      emoji:'💊', img:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&q=80'},
+  {id:'panaderia',   label:'Panadería',     emoji:'🍞', img:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80'},
 ];
 
 let currentRubro = null;
