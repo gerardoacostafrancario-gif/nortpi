@@ -428,7 +428,7 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
       <div class="perfil-item">Notificaciones <span class="perfil-chevron">›</span></div>
       <div class="perfil-item" onclick="showToast('Panel de comercio disponible en /comercio')">Soy comerciante <span class="perfil-chevron">›</span></div>
       <div class="perfil-item" onclick="showToast('Panel de cadete disponible en /cadete')">Soy cadete <span class="perfil-chevron">›</span></div>
-      <div class="perfil-item" style="color:#D32F2F;">Cerrar sesión <span class="perfil-chevron" style="color:#D32F2F;">›</span></div>
+      <div class="perfil-item" style="color:#D32F2F;" onclick="cerrarSesion()">Cerrar sesión <span class="perfil-chevron" style="color:#D32F2F;">›</span></div>
     </div>
   </div>
 </div>
@@ -835,6 +835,28 @@ async function cargarPedidos() {
     }
   }
 }
+
+async function cerrarSesion() {
+  await sb.auth.signOut();
+  window.location.href = 'login-usuario.html';
+}
+
+// Verificar sesión — si no hay usuario redirigir al login
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (!session) {
+    window.location.href = 'login-usuario.html';
+    return;
+  }
+  // Guardar datos del usuario
+  const user = session.user;
+  const nombre = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario';
+  const inicial = nombre.charAt(0).toUpperCase();
+  document.querySelector('.perfil-av').textContent = inicial;
+  document.querySelectorAll('.perfil-av').forEach(el => el.textContent = inicial);
+  // Rellenar perfil
+  const nombreEl = document.querySelector('#s-perfil .app-name-perfil');
+  if (nombreEl) nombreEl.textContent = nombre;
+});
 
 // CARRUSEL BANNERS
 let bannerIdx = 0;
