@@ -57,9 +57,9 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;}
 .search-box input::placeholder{color:rgba(255,255,255,.38);}
 
 /* ─── CATEGORÍAS ─── */
-.cats{display:flex;gap:8px;padding:16px 18px 8px;overflow-x:auto;scrollbar-width:none;}
+.cats{display:flex;gap:8px;padding:14px 18px 10px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;}
 .cats::-webkit-scrollbar{display:none;}
-.cat{flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--gray-200);color:var(--gray-600);background:var(--white);transition:.15s;letter-spacing:.01em;}
+.cat{flex-shrink:0;white-space:nowrap;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--gray-200);color:var(--gray-600);background:var(--white);transition:.15s;letter-spacing:.01em;}
 .cat.active{background:var(--black);color:var(--brand);border-color:var(--black);}
 
 /* ─── SECCIONES ─── */
