@@ -487,46 +487,97 @@ async function cargarComercios() {
     const { data, error } = await sb.from('comercios').select('*').eq('activo', true).order('rating', { ascending: false });
     if (error) throw error;
     allComercios = data || [];
-    renderComercios(allComercios);
   } catch(e) {
     allComercios = [
-      {id:'1',nombre:'Restaurante Central',categoria:'comida',imagen_emoji:'🍽️',imagen_url:'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600&q=80',rating:4.8,total_pedidos:142,abierto_ahora:true},
-      {id:'2',nombre:'Carnicería',categoria:'carniceria',imagen_emoji:'🥩',imagen_url:'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=600&q=80',rating:4.7,total_pedidos:98,abierto_ahora:true},
-      {id:'3',nombre:'Farmacia',categoria:'farmacia',imagen_emoji:'💊',imagen_url:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&q=80',rating:4.9,total_pedidos:201,abierto_ahora:true},
-      {id:'4',nombre:'Supermercado',categoria:'almacen',imagen_emoji:'🛒',imagen_url:'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80',rating:4.5,total_pedidos:87,abierto_ahora:true},
-      {id:'5',nombre:'Verdulería',categoria:'verduleria',imagen_emoji:'🥦',imagen_url:'https://images.unsplash.com/photo-1518843875459-f738682238a6?w=600&q=80',rating:4.6,total_pedidos:63,abierto_ahora:false},
-      {id:'6',nombre:'Panadería',categoria:'panaderia',imagen_emoji:'🍞',imagen_url:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80',rating:4.8,total_pedidos:175,abierto_ahora:true},
+      {id:'1',nombre:'Restaurante Central',categoria:'comida',imagen_url:'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600&q=80',rating:4.8,total_pedidos:142,abierto_ahora:true},
+      {id:'2',nombre:'Carnicería',categoria:'carniceria',imagen_url:'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=600&q=80',rating:4.7,total_pedidos:98,abierto_ahora:true},
+      {id:'3',nombre:'Farmacia',categoria:'farmacia',imagen_url:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&q=80',rating:4.9,total_pedidos:201,abierto_ahora:true},
+      {id:'4',nombre:'Supermercado',categoria:'supermercado',imagen_url:'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80',rating:4.5,total_pedidos:87,abierto_ahora:true},
+      {id:'5',nombre:'Panadería',categoria:'panaderia',imagen_url:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80',rating:4.8,total_pedidos:175,abierto_ahora:true},
+      {id:'6',nombre:'Restaurante',categoria:'comida',imagen_url:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80',rating:4.6,total_pedidos:110,abierto_ahora:true},
+      {id:'7',nombre:'Heladería',categoria:'heladeria',imagen_url:'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=600&q=80',rating:4.8,total_pedidos:95,abierto_ahora:true},
+      {id:'8',nombre:'Bebidas & Licorería',categoria:'bebidas',imagen_url:'https://images.unsplash.com/photo-1437418747212-8d9709afab22?w=600&q=80',rating:4.5,total_pedidos:78,abierto_ahora:true},
+      {id:'9',nombre:'Veterinaria & Mascotas',categoria:'mascotas',imagen_url:'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80',rating:4.7,total_pedidos:54,abierto_ahora:true},
     ];
-    renderComercios(allComercios);
   }
+  renderRubros();
+}
+
+// RUBROS — cards del home
+const RUBROS = [
+  {id:'comida',     label:'Restaurantes',  emoji:'🍽️', img:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80'},
+  {id:'supermercado',label:'Supermercado', emoji:'🛒', img:'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80'},
+  {id:'heladeria',  label:'Heladería',     emoji:'🍦', img:'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=600&q=80'},
+  {id:'mascotas',   label:'Mascotas',      emoji:'🐾', img:'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80'},
+  {id:'bebidas',    label:'Bebidas',       emoji:'🥤', img:'https://images.unsplash.com/photo-1437418747212-8d9709afab22?w=600&q=80'},
+  {id:'carniceria', label:'Carnicería',    emoji:'🥩', img:'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=600&q=80'},
+  {id:'farmacia',   label:'Farmacia',      emoji:'💊', img:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&q=80'},
+  {id:'panaderia',  label:'Panadería',     emoji:'🍞', img:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80'},
+];
+
+let currentRubro = null;
+
+function renderRubros() {
+  document.getElementById('comercios-container').innerHTML = RUBROS.map(r => `
+    <div class="com-card" onclick="abrirRubro('${r.id}','${r.label}')">
+      <div class="com-img">
+        <img src="${r.img}" alt="${r.label}" loading="lazy"/>
+        <div class="com-img-overlay"></div>
+      </div>
+      <div class="com-info">
+        <div class="com-name">${r.emoji} ${r.label}</div>
+        <div class="com-meta"><span>Tocá para ver todos</span></div>
+      </div>
+    </div>`).join('');
+}
+
+function abrirRubro(catId, label) {
+  currentRubro = catId;
+  const lista = allComercios.filter(c => c.categoria === catId);
+  const tiempos = {comida:'20–30',carniceria:'15–25',farmacia:'10–20',supermercado:'25–35',verduleria:'20–30',panaderia:'10–20',heladeria:'15–25',bebidas:'10–20',mascotas:'20–30'};
+  const envios  = {comida:'$800',carniceria:'$600',farmacia:'$700',supermercado:'$1.000',verduleria:'$800',panaderia:'$600',heladeria:'$600',bebidas:'$500',mascotas:'$700'};
+  // Pantalla detalle reutilizada para listar comercios del rubro
+  document.getElementById('det-name').textContent = label;
+  document.getElementById('det-meta').textContent = lista.length ? `${lista.length} comercio${lista.length>1?'s':''} disponible${lista.length>1?'s':''}` : 'Próximamente en tu zona';
+  document.getElementById('cart-float').style.display = 'none';
+  if (!lista.length) {
+    document.getElementById('menu-container').innerHTML = '<div class="empty"><div class="big">🏪</div><p>Todavía no hay comercios<br>de este rubro en tu zona.<br>¡Pronto habrá más!</p></div>';
+  } else {
+    document.getElementById('menu-container').innerHTML = lista.map(c => `
+      <div class="com-card" style="margin:14px 18px;" onclick="abrirComercio('${c.id}')">
+        <div class="com-img">
+          <img src="${c.imagen_url||''}" alt="${c.nombre}" loading="lazy"/>
+          <div class="com-img-overlay"></div>
+          <div class="com-img-badge">${c.abierto_ahora?'<span class="tag tag-g">Abierto</span>':'<span class="closed-badge">Cerrado</span>'}</div>
+        </div>
+        <div class="com-info">
+          <div class="com-name">${c.nombre}</div>
+          <div class="com-meta">
+            <span>⭐ ${c.rating}</span>
+            <span>🕐 ${tiempos[c.categoria]||'20–30'} min</span>
+            <span>🛵 ${envios[c.categoria]||'$800'} envío</span>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+  go('detail');
 }
 
 function renderComercios(lista) {
-  const colors = {comida:'#FFF3E0',carniceria:'#FCE4EC',farmacia:'#E8F5E9',almacen:'#E3F2FD',verduleria:'#F1F8E9',panaderia:'#FFF8E1'};
-  const tiempos = {comida:'20–30',carniceria:'15–25',farmacia:'10–20',almacen:'25–35',verduleria:'20–30',panaderia:'10–20'};
-  const envios = {comida:'$800',carniceria:'$600',farmacia:'$700',almacen:'$1.000',verduleria:'$800',panaderia:'$600'};
-  const imgFallback = {comida:'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600&q=80',carniceria:'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=600&q=80',farmacia:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&q=80',almacen:'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80',verduleria:'https://images.unsplash.com/photo-1518843875459-f738682238a6?w=600&q=80',panaderia:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80'};
+  // solo usado en búsqueda
+  const tiempos = {comida:'20–30',carniceria:'15–25',farmacia:'10–20',supermercado:'25–35',verduleria:'20–30',panaderia:'10–20',heladeria:'15–25',bebidas:'10–20',mascotas:'20–30'};
+  const envios  = {comida:'$800',carniceria:'$600',farmacia:'$700',supermercado:'$1.000',verduleria:'$800',panaderia:'$600',heladeria:'$600',bebidas:'$500',mascotas:'$700'};
+  const imgFallback = {comida:'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80',carniceria:'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=600&q=80',farmacia:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&q=80',supermercado:'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&q=80',panaderia:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80',heladeria:'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?w=600&q=80',bebidas:'https://images.unsplash.com/photo-1437418747212-8d9709afab22?w=600&q=80',mascotas:'https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=600&q=80'};
   if (!lista.length) {
     document.getElementById('comercios-container').innerHTML = '<div class="empty"><div class="big">🔍</div><p>No encontramos resultados.</p></div>';
     return;
   }
   document.getElementById('comercios-container').innerHTML = lista.map(c => {
-    const img = c.imagen_url || imgFallback[c.categoria] || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80';
-    return `
-    <div class="com-card" onclick="abrirComercio('${c.id}')">
-      <div class="com-img">
-        <img src="${img}" alt="${c.nombre}" loading="lazy"/>
-        <div class="com-img-overlay"></div>
-        <div class="com-img-badge">${c.abierto_ahora ? '<span class="tag tag-g">Abierto</span>' : '<span class="closed-badge">Cerrado</span>'}</div>
-      </div>
-      <div class="com-info">
-        <div class="com-name">${c.nombre}</div>
-        <div class="com-meta">
-          <span>⭐ ${c.rating}</span>
-          <span>🕐 ${tiempos[c.categoria]||'20–35'} min</span>
-          <span>🛵 ${envios[c.categoria]||'$800'} envío</span>
-        </div>
-      </div>
+    const img = c.imagen_url || imgFallback[c.categoria] || '';
+    return `<div class="com-card" onclick="abrirComercio('${c.id}')">
+      <div class="com-img"><img src="${img}" alt="${c.nombre}" loading="lazy"/><div class="com-img-overlay"></div><div class="com-img-badge">${c.abierto_ahora?'<span class="tag tag-g">Abierto</span>':'<span class="closed-badge">Cerrado</span>'}</div></div>
+      <div class="com-info"><div class="com-name">${c.nombre}</div>
+      <div class="com-meta"><span>⭐ ${c.rating}</span><span>🕐 ${tiempos[c.categoria]||'20–30'} min</span><span>🛵 ${envios[c.categoria]||'$800'} envío</span></div></div>
     </div>`;
   }).join('');
 }
@@ -534,12 +585,13 @@ function renderComercios(lista) {
 function filtrar(el, cat) {
   document.querySelectorAll('.cat').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
-  const lista = cat === 'todos' ? allComercios : allComercios.filter(c => c.categoria === cat);
-  renderComercios(lista);
+  if (cat === 'todos') { renderRubros(); return; }
+  abrirRubro(cat, RUBROS.find(r=>r.id===cat)?.label || cat);
 }
 
 function buscar(q) {
-  const lista = q ? allComercios.filter(c => c.nombre.toLowerCase().includes(q.toLowerCase())) : allComercios;
+  if (!q) { renderRubros(); return; }
+  const lista = allComercios.filter(c => c.nombre.toLowerCase().includes(q.toLowerCase()));
   renderComercios(lista);
 }
 
