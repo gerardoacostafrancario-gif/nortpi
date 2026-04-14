@@ -11,7 +11,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>Puerta a Puerta — Tu pedido, ya mismo.</title>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyASBhagsg9KOoRLRaXmI8BEw9VMvf3dQo0&language=es" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -609,7 +608,22 @@ function go(screen) {
   const navMap = {home:'nav-home',pedidos:'nav-pedidos',carrito:'nav-carrito',perfil:'nav-perfil'};
   if (navMap[screen]) document.getElementById(navMap[screen]).classList.add('active');
   currentScreen = screen;
-  if (screen === 'carrito') { renderCarrito(); cargarDireccionesEnCarrito(); actualizarDirGPS(); setTimeout(iniciarMapaCarrito, 300); }
+  if (screen === 'carrito') { 
+    renderCarrito(); 
+    cargarDireccionesEnCarrito(); 
+    actualizarDirGPS(); 
+    // Cargar Google Maps dinámicamente sin bloquear la app
+    if (!window.google?.maps) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyASBhagsg9KOoRLRaXmI8BEw9VMvf3dQo0&language=es`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => setTimeout(iniciarMapaCarrito, 300);
+      document.head.appendChild(script);
+    } else {
+      setTimeout(iniciarMapaCarrito, 300);
+    }
+  }
   if (screen === 'pedidos') cargarPedidos();
   window.scrollTo(0,0);
 }
