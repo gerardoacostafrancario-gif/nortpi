@@ -87,7 +87,19 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
 .tag-gr{background:var(--gray-100);color:var(--gray-600);}
 .closed-badge{background:#FFEBEE;color:#B71C1C;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;}
 
-/* ─── PEDIDO CONFIRMADO ─── */
+/* ─── RATING ─── */
+.rating-screen{display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.7);align-items:flex-end;justify-content:center;}
+.rating-screen.visible{display:flex;}
+.rating-card{background:#fff;border-radius:28px 28px 0 0;padding:32px 24px 48px;width:100%;max-width:430px;}
+.rating-title{font-size:20px;font-weight:800;color:var(--black);margin-bottom:6px;text-align:center;}
+.rating-sub{font-size:13px;color:var(--gray-400);margin-bottom:28px;text-align:center;}
+.stars{display:flex;justify-content:center;gap:12px;margin-bottom:24px;}
+.star{font-size:42px;cursor:pointer;transition:transform .15s;filter:grayscale(1);}
+.star.active{filter:none;transform:scale(1.1);}
+.rating-comentario{width:100%;border:1.5px solid var(--gray-200);border-radius:var(--radius-md);padding:12px 14px;font-size:14px;resize:none;outline:none;font-family:inherit;margin-bottom:16px;}
+.rating-comentario:focus{border-color:var(--brand);}
+.btn-rating{width:100%;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-md);padding:16px;font-size:15px;font-weight:800;cursor:pointer;}
+.btn-skip{width:100%;background:transparent;color:var(--gray-400);border:none;padding:12px;font-size:13px;cursor:pointer;margin-top:8px;}
 .confirmado-screen{display:none;position:fixed;inset:0;z-index:600;background:var(--white);flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;}
 .confirmado-screen.visible{display:flex;}
 @keyframes pop{0%{transform:scale(0);opacity:0;}60%{transform:scale(1.15);}100%{transform:scale(1);opacity:1;}}
@@ -236,6 +248,25 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
 <!-- TOAST -->
 <div class="toast" id="toast"><span class="toast-dot"></span><span id="toast-msg"></span></div>
 
+<!-- PANTALLA RATING -->
+<div class="rating-screen" id="rating-screen">
+  <div class="rating-card">
+    <div style="text-align:center;font-size:48px;margin-bottom:12px;">⭐</div>
+    <div class="rating-title">¿Cómo estuvo tu pedido?</div>
+    <div class="rating-sub" id="rating-comercio-nombre">Calificá tu experiencia</div>
+    <div class="stars" id="stars-container">
+      <span class="star" onclick="selStar(1)">⭐</span>
+      <span class="star" onclick="selStar(2)">⭐</span>
+      <span class="star" onclick="selStar(3)">⭐</span>
+      <span class="star" onclick="selStar(4)">⭐</span>
+      <span class="star" onclick="selStar(5)">⭐</span>
+    </div>
+    <textarea class="rating-comentario" id="rating-comentario" rows="3" placeholder="Contanos tu experiencia (opcional)..."></textarea>
+    <button class="btn-rating" onclick="enviarRating()">Enviar calificación</button>
+    <button class="btn-skip" onclick="cerrarRating()">Ahora no</button>
+  </div>
+</div>
+
 <!-- PANTALLA PEDIDO CONFIRMADO -->
 <div class="confirmado-screen" id="s-confirmado">
   <div class="conf-icono">🎉</div>
@@ -272,10 +303,13 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
         <span id="ubicacion-txt">Detectando...</span>
       </div>
     </div>
-    <div class="search-box">
+    <div class="search-box" style="position:relative;">
       <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="rgba(255,255,255,.4)" stroke-width="1.8"/><path d="M14 14l3 3" stroke="rgba(255,255,255,.4)" stroke-width="1.8" stroke-linecap="round"/></svg>
-      <input type="text" placeholder="Buscar restaurante o producto..." id="search-input" oninput="buscar(this.value)"/>
+      <input type="text" placeholder="Buscar restaurante o producto..." id="search-input" oninput="buscarTiempoReal(this.value)" autocomplete="off"/>
+      <div id="search-clear" onclick="limpiarBusqueda()" style="display:none;cursor:pointer;color:rgba(255,255,255,.5);font-size:18px;line-height:1;padding:0 2px;">✕</div>
     </div>
+    <!-- Resultados de búsqueda -->
+    <div id="search-results" style="display:none;position:absolute;left:18px;right:18px;top:100%;z-index:300;background:#fff;border-radius:0 0 var(--radius-lg) var(--radius-lg);box-shadow:0 8px 24px rgba(0,0,0,.15);overflow:hidden;max-height:320px;overflow-y:auto;"></div>
   </div>
   <!-- BANNERS PATROCINADOS -->
   <div style="padding:14px 18px 0;position:relative;">
@@ -683,10 +717,113 @@ function filtrar(el, cat) {
   abrirRubro(cat, RUBROS.find(r=>r.id===cat)?.label || cat);
 }
 
-function buscar(q) {
-  if (!q) { renderRubros(); return; }
-  const lista = allComercios.filter(c => c.nombre.toLowerCase().includes(q.toLowerCase()));
-  renderComercios(lista);
+// ── BÚSQUEDA EN TIEMPO REAL ──
+let searchTimeout = null;
+
+function buscarTiempoReal(q) {
+  const clearBtn = document.getElementById('search-clear');
+  if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
+  clearTimeout(searchTimeout);
+  if (!q.trim()) {
+    cerrarResultados();
+    renderRubros();
+    return;
+  }
+  searchTimeout = setTimeout(() => {
+    const resultados = allComercios.filter(c =>
+      c.nombre.toLowerCase().includes(q.toLowerCase()) ||
+      c.categoria.toLowerCase().includes(q.toLowerCase())
+    );
+    mostrarResultados(resultados, q);
+  }, 200);
+}
+
+function mostrarResultados(lista, q) {
+  const cont = document.getElementById('search-results');
+  if (!cont) return;
+  if (!lista.length) {
+    cont.style.display = 'block';
+    cont.innerHTML = `<div style="padding:20px;text-align:center;color:var(--gray-400);font-size:13px;">Sin resultados para "<b>${q}</b>"</div>`;
+    return;
+  }
+  cont.style.display = 'block';
+  cont.innerHTML = lista.map(c => `
+    <div onclick="selResultado('${c.id}')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #F0F0F0;cursor:pointer;background:#fff;transition:.12s;" onmouseover="this.style.background='#FFF8F6'" onmouseout="this.style.background='#fff'">
+      <div style="width:44px;height:44px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#f5f5f5;">
+        <img src="${c.imagen_url||''}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:700;color:#0D0D0D;">${c.nombre}</div>
+        <div style="font-size:11px;color:#9DA3AE;margin-top:2px;">⭐ ${c.rating} · ${c.categoria}</div>
+      </div>
+      <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:${c.abierto_ahora?'#DCFCE7':'#F3F4F6'};color:${c.abierto_ahora?'#16A34A':'#9DA3AE'};">${c.abierto_ahora?'Abierto':'Cerrado'}</span>
+    </div>`).join('');
+}
+
+function selResultado(id) {
+  cerrarResultados();
+  limpiarBusqueda();
+  abrirComercio(id);
+}
+
+function cerrarResultados() {
+  const cont = document.getElementById('search-results');
+  if (cont) cont.style.display = 'none';
+}
+
+function limpiarBusqueda() {
+  const input = document.getElementById('search-input');
+  const clearBtn = document.getElementById('search-clear');
+  if (input) input.value = '';
+  if (clearBtn) clearBtn.style.display = 'none';
+  cerrarResultados();
+  renderRubros();
+}
+
+function buscar(q) { buscarTiempoReal(q); }
+
+// Cerrar resultados al tocar afuera
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-box') && !e.target.closest('#search-results')) {
+    cerrarResultados();
+  }
+});
+
+// ── RATING ──
+let starSeleccionada = 0;
+
+function mostrarRating(comercioNombre) {
+  starSeleccionada = 0;
+  document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+  document.getElementById('rating-comentario').value = '';
+  document.getElementById('rating-comercio-nombre').textContent = `Calificá a ${comercioNombre}`;
+  document.getElementById('rating-screen').classList.add('visible');
+}
+
+function selStar(n) {
+  starSeleccionada = n;
+  document.querySelectorAll('.star').forEach((s,i) => {
+    s.classList.toggle('active', i < n);
+  });
+}
+
+async function enviarRating() {
+  if (!starSeleccionada) { showToast('Elegí una puntuación'); return; }
+  const comentario = document.getElementById('rating-comentario').value.trim();
+  try {
+    await sb.from('ratings').insert([{
+      comercio_id: currentComercio?.id,
+      pedido_id: currentPedido?.id,
+      rating: starSeleccionada,
+      comentario,
+    }]);
+  } catch(e) {}
+  cerrarRating();
+  showToast('✅ ¡Gracias por tu calificación!', 3000);
+}
+
+function cerrarRating() {
+  document.getElementById('rating-screen').classList.remove('visible');
 }
 
 const menusFallback = {
@@ -1017,6 +1154,8 @@ function iniciarTracking() {
       document.getElementById('track-sub').textContent = '¡Pedido entregado! 🎉';
       clearInterval(trackInterval);
       showToast('¡Tu pedido fue entregado!', 3000);
+      // Mostrar pantalla de rating después de 2 segundos
+      setTimeout(() => mostrarRating(currentComercio?.nombre || 'el comercio'), 2500);
     }
   }, 6000);
 }
