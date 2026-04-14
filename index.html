@@ -346,6 +346,36 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
       <div class="pay-opt" onclick="selPay(this,'transferencia')">Transferencia</div>
     </div>
   </div>
+
+  <!-- DIRECCIÓN DE ENTREGA -->
+  <div style="padding:14px 18px;background:var(--white);margin-bottom:10px;border-top:1px solid var(--gray-100);border-bottom:1px solid var(--gray-100);">
+    <div class="pay-lbl" style="margin-bottom:10px;">Dirección de entrega</div>
+    <div id="dir-opciones" style="display:flex;flex-direction:column;gap:8px;">
+      <div id="dir-opt-gps" onclick="selDireccion('gps')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1.5px solid #FF6B35;background:#FFF8F6;cursor:pointer;">
+        <span style="font-size:20px;">📍</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:#0D0D0D;">Mi ubicación actual</div>
+          <div style="font-size:11px;color:#9DA3AE;margin-top:2px;" id="dir-gps-txt">Detectando...</div>
+        </div>
+        <div style="width:18px;height:18px;border-radius:50%;border:2px solid #FF6B35;background:#FF6B35;display:flex;align-items:center;justify-content:center;" id="dot-gps">
+          <div style="width:7px;height:7px;border-radius:50%;background:#fff;"></div>
+        </div>
+      </div>
+      <div id="dir-opt-otras" style="display:flex;flex-direction:column;gap:8px;" ></div>
+      <div id="dir-opt-nueva" onclick="selDireccion('nueva')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1.5px solid #E0E0E0;background:#fff;cursor:pointer;">
+        <span style="font-size:20px;">✏️</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:#0D0D0D;">Escribir otra dirección</div>
+          <div style="font-size:11px;color:#9DA3AE;margin-top:2px;">Ingresá una dirección diferente</div>
+        </div>
+        <div style="width:18px;height:18px;border-radius:50%;border:2px solid #E0E0E0;background:#fff;" id="dot-nueva"></div>
+      </div>
+      <div id="input-dir-nueva" style="display:none;margin-top:4px;">
+        <input id="dir-nueva-txt" placeholder="Ej: San Martín 450, Santiago del Estero" style="width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:12px 14px;font-size:13px;outline:none;font-family:inherit;"/>
+      </div>
+    </div>
+  </div>
+
   <div class="resumen">
     <div class="res-row"><span>Subtotal</span><span id="r-sub">$0</span></div>
     <div class="res-row"><span id="r-envio-label">Envío</span><span id="r-envio">$800</span></div>
@@ -423,12 +453,25 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
       </div>
     </div>
     <div class="perfil-menu">
-      <div class="perfil-item" onclick="showToast('Próximamente: gestión de direcciones')">Mis direcciones <span class="perfil-chevron">›</span></div>
-      <div class="perfil-item" onclick="showToast('Próximamente: métodos de pago')">Métodos de pago <span class="perfil-chevron">›</span></div>
-      <div class="perfil-item" onclick="showToast('Próximamente: configuración de notificaciones')">Notificaciones <span class="perfil-chevron">›</span></div>
+      <div class="perfil-item" onclick="abrirPantallaExtra('direcciones')">Mis direcciones <span class="perfil-chevron">›</span></div>
+      <div class="perfil-item" onclick="abrirPantallaExtra('pagos')">Métodos de pago <span class="perfil-chevron">›</span></div>
+      <div class="perfil-item" onclick="abrirPantallaExtra('notificaciones')">Notificaciones <span class="perfil-chevron">›</span></div>
       <div class="perfil-item" style="color:#D32F2F;" onclick="cerrarSesion()">Cerrar sesión <span class="perfil-chevron" style="color:#D32F2F;">›</span></div>
     </div>
   </div>
+</div>
+
+<!-- PANTALLA EXTRA (direcciones / pagos / notificaciones) -->
+<div id="pantalla-extra" style="display:none;position:fixed;inset:0;z-index:500;background:#F4F5F7;overflow-y:auto;">
+  <div style="background:#0D0D0D;padding:18px 18px 20px;">
+    <div style="display:flex;align-items:center;gap:8px;color:#FF6B35;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:12px;" onclick="cerrarPantallaExtra()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      Volver
+    </div>
+    <div id="extra-titulo" style="font-size:20px;font-weight:800;color:#fff;"></div>
+  </div>
+  <div id="extra-contenido" style="padding:16px;"></div>
+</div>
 </div>
 
 <!-- NAV -->
@@ -473,7 +516,7 @@ function go(screen) {
   const navMap = {home:'nav-home',pedidos:'nav-pedidos',carrito:'nav-carrito',perfil:'nav-perfil'};
   if (navMap[screen]) document.getElementById(navMap[screen]).classList.add('active');
   currentScreen = screen;
-  if (screen === 'carrito') renderCarrito();
+  if (screen === 'carrito') { renderCarrito(); cargarDireccionesEnCarrito(); }
   if (screen === 'pedidos') cargarPedidos();
   window.scrollTo(0,0);
 }
@@ -677,6 +720,64 @@ function selPay(el, method) {
   payMethod = method;
 }
 
+// ── DIRECCIÓN DE ENTREGA EN CARRITO ──
+let dirEntregaSeleccionada = 'gps';
+
+function cargarDireccionesEnCarrito() {
+  // Mostrar direcciones guardadas
+  const dirs = JSON.parse(localStorage.getItem('pap_direcciones') || '[]');
+  const cont = document.getElementById('dir-opt-otras');
+  if (cont) {
+    cont.innerHTML = dirs.map((d,i) => `
+      <div id="dir-opt-saved-${i}" onclick="selDireccion('saved-${i}')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1.5px solid #E0E0E0;background:#fff;cursor:pointer;">
+        <span style="font-size:20px;">🏠</span>
+        <div style="flex:1;">
+          <div style="font-size:13px;font-weight:700;color:#0D0D0D;">${d.nombre}</div>
+          <div style="font-size:11px;color:#9DA3AE;margin-top:2px;">${d.dir}</div>
+        </div>
+        <div style="width:18px;height:18px;border-radius:50%;border:2px solid #E0E0E0;background:#fff;" id="dot-saved-${i}"></div>
+      </div>`).join('');
+  }
+  // Actualizar texto GPS
+  const gpsTxt = document.getElementById('dir-gps-txt');
+  if (gpsTxt) gpsTxt.textContent = ubicacionActual || 'Detectando...';
+}
+
+function selDireccion(tipo) {
+  dirEntregaSeleccionada = tipo;
+  // Resetear todos los dots
+  document.querySelectorAll('[id^="dot-"]').forEach(d => {
+    d.style.borderColor = '#E0E0E0';
+    d.style.background = '#fff';
+    d.innerHTML = '';
+  });
+  document.querySelectorAll('[id^="dir-opt-"]').forEach(d => {
+    if (d.style) { d.style.borderColor = '#E0E0E0'; d.style.background = '#fff'; }
+  });
+  // Activar el seleccionado
+  const dotId = tipo === 'gps' ? 'dot-gps' : tipo === 'nueva' ? 'dot-nueva' : `dot-${tipo}`;
+  const optId = tipo === 'gps' ? 'dir-opt-gps' : tipo === 'nueva' ? 'dir-opt-nueva' : `dir-opt-${tipo}`;
+  const dot = document.getElementById(dotId);
+  const opt = document.getElementById(optId);
+  if (dot) { dot.style.borderColor = '#FF6B35'; dot.style.background = '#FF6B35'; dot.innerHTML = '<div style="width:7px;height:7px;border-radius:50%;background:#fff;"></div>'; }
+  if (opt) { opt.style.borderColor = '#FF6B35'; opt.style.background = '#FFF8F6'; }
+  // Mostrar/ocultar input de nueva dirección
+  const inputNueva = document.getElementById('input-dir-nueva');
+  if (inputNueva) inputNueva.style.display = tipo === 'nueva' ? 'block' : 'none';
+}
+
+function getDireccionEntrega() {
+  if (dirEntregaSeleccionada === 'gps') return ubicacionActual || 'Ubicación actual';
+  if (dirEntregaSeleccionada === 'nueva') {
+    const txt = document.getElementById('dir-nueva-txt')?.value.trim();
+    return txt || 'Dirección no especificada';
+  }
+  // Dirección guardada
+  const idx = parseInt(dirEntregaSeleccionada.replace('saved-',''));
+  const dirs = JSON.parse(localStorage.getItem('pap_direcciones') || '[]');
+  return dirs[idx] ? `${dirs[idx].nombre}: ${dirs[idx].dir}` : ubicacionActual;
+}
+
 function renderCarrito() {
   const items = Object.entries(cart).filter(([,i]) => i.qty > 0);
   if (!items.length) {
@@ -730,7 +831,7 @@ async function confirmarPedido() {
     total,
     metodo_pago: payMethod,
     estado: 'confirmado',
-    direccion_entrega: ubicacionActual,
+    direccion_entrega: getDireccionEntrega(),
     comision_puertaapuerta: Math.round(sub * 0.12),
     pago_cadete: Math.round(800 * 0.7),
   };
@@ -849,36 +950,190 @@ sb.auth.getSession().then(({ data: { session } }) => {
   }
 
   const user = session.user;
-  const rol = user.user_metadata?.role || localStorage.getItem('pap_role') || 'usuario';
+  const rol = user.user_metadata?.role || localStorage.getItem('pap_role');
+
+  // Si no tiene rol → mostrar pantalla de selección
+  if (!rol) {
+    mostrarSelectorRol(user);
+    return;
+  }
 
   // Si es comercio o cadete redirigir a su panel
-  if (rol === 'comercio') {
-    window.location.href = 'comercio.html';
-    return;
-  }
-  if (rol === 'cadete') {
-    window.location.href = 'cadete.html';
-    return;
-  }
+  if (rol === 'comercio') { window.location.href = 'comercio.html'; return; }
+  if (rol === 'cadete') { window.location.href = 'cadete.html'; return; }
 
   // Es usuario común — mostrar la app
-  const nombre = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario';
-  const inicial = nombre.charAt(0).toUpperCase();
-  document.querySelectorAll('.perfil-av').forEach(el => el.textContent = inicial);
-
-  // Rellenar datos de perfil
-  const elNombre = document.getElementById('perfil-nombre');
-  const elEmail = document.getElementById('perfil-email');
-  const elAv = document.getElementById('perfil-av');
-  if (elNombre) elNombre.textContent = nombre;
-  if (elEmail) elEmail.textContent = user.email || '';
-  if (elAv) elAv.textContent = inicial;
-
-  // Pedir ubicación siempre al entrar
+  cargarPerfil(user);
   detectarUbicacion();
 });
 
-// UBICACIÓN AUTOMÁTICA
+// ── SELECTOR DE ROL (para Google OAuth sin rol previo) ──
+function mostrarSelectorRol(user) {
+  // Crear overlay de selección de rol
+  const overlay = document.createElement('div');
+  overlay.id = 'rol-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;align-items:flex-end;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:28px 28px 0 0;padding:32px 24px 48px;width:100%;max-width:430px;">
+      <div style="font-size:22px;font-weight:800;color:#0D0D0D;margin-bottom:8px;text-align:center;">¡Bienvenido! ¿Quién sos?</div>
+      <div style="font-size:14px;color:#A0A0A0;margin-bottom:28px;text-align:center;line-height:1.5;">Elegí tu tipo de cuenta para continuar.</div>
+      <div style="display:flex;flex-direction:column;gap:12px;" id="rol-opciones">
+        <button onclick="elegirRol('usuario')" style="display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:16px;border:2px solid #E0E0E0;background:#fff;cursor:pointer;text-align:left;width:100%;transition:.15s;">
+          <div style="width:48px;height:48px;border-radius:14px;background:#FFF3EE;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🛍️</div>
+          <div><div style="font-size:15px;font-weight:700;color:#0D0D0D;">Usuario</div><div style="font-size:12px;color:#A0A0A0;margin-top:3px;">Quiero pedir delivery a domicilio</div></div>
+        </button>
+        <button onclick="elegirRol('comercio')" style="display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:16px;border:2px solid #E0E0E0;background:#fff;cursor:pointer;text-align:left;width:100%;transition:.15s;">
+          <div style="width:48px;height:48px;border-radius:14px;background:#EEF3FF;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🏪</div>
+          <div><div style="font-size:15px;font-weight:700;color:#0D0D0D;">Comercio</div><div style="font-size:12px;color:#A0A0A0;margin-top:3px;">Tengo un negocio y quiero vender</div></div>
+        </button>
+        <button onclick="elegirRol('cadete')" style="display:flex;align-items:center;gap:16px;padding:18px 20px;border-radius:16px;border:2px solid #E0E0E0;background:#fff;cursor:pointer;text-align:left;width:100%;transition:.15s;">
+          <div style="width:48px;height:48px;border-radius:14px;background:#EEFFF5;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">🏍️</div>
+          <div><div style="font-size:15px;font-weight:700;color:#0D0D0D;">Cadete</div><div style="font-size:12px;color:#A0A0A0;margin-top:3px;">Quiero repartir y ganar dinero</div></div>
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  window._rolUser = user;
+}
+
+async function elegirRol(rol) {
+  try { await sb.auth.updateUser({ data: { role: rol } }); } catch(e) {}
+  localStorage.setItem('pap_role', rol);
+  document.getElementById('rol-overlay')?.remove();
+  if (rol === 'comercio') { window.location.href = 'comercio.html'; return; }
+  if (rol === 'cadete') { window.location.href = 'cadete.html'; return; }
+  cargarPerfil(window._rolUser || {});
+  detectarUbicacion();
+}
+
+function cargarPerfil(user) {
+  const nombre = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario';
+  const inicial = nombre.charAt(0).toUpperCase();
+  document.querySelectorAll('.perfil-av').forEach(el => el.textContent = inicial);
+  const elAv = document.getElementById('perfil-av');
+  const elNombre = document.getElementById('perfil-nombre');
+  const elEmail = document.getElementById('perfil-email');
+  if (elAv) elAv.textContent = inicial;
+  if (elNombre) elNombre.textContent = nombre;
+  if (elEmail) elEmail.textContent = user.email || '';
+}
+
+// ── PANTALLAS EXTRA DEL PERFIL ──
+let direcciones = JSON.parse(localStorage.getItem('pap_direcciones') || '[]');
+let metodoPagoGuardado = localStorage.getItem('pap_metodo_pago') || '';
+let notifPedidos = localStorage.getItem('pap_notif_pedidos') !== 'false';
+let notifPromos = localStorage.getItem('pap_notif_promos') !== 'false';
+
+function abrirPantallaExtra(tipo) {
+  const panel = document.getElementById('pantalla-extra');
+  const titulo = document.getElementById('extra-titulo');
+  const contenido = document.getElementById('extra-contenido');
+  panel.style.display = 'block';
+  window.scrollTo(0,0);
+
+  if (tipo === 'direcciones') {
+    titulo.textContent = 'Mis direcciones';
+    contenido.innerHTML = `
+      <div style="background:#fff;border-radius:14px;padding:16px;border:1px solid #E2E4E8;margin-bottom:14px;">
+        ${direcciones.length ? direcciones.map((d,i) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #F0F1F3;">
+            <div>
+              <div style="font-size:14px;font-weight:700;color:#0D0D0D;">${d.nombre}</div>
+              <div style="font-size:12px;color:#9DA3AE;margin-top:3px;">${d.dir}</div>
+            </div>
+            <button onclick="borrarDireccion(${i})" style="background:#FEE2E2;color:#DC2626;border:none;border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;">Borrar</button>
+          </div>`).join('') : '<div style="text-align:center;padding:24px;color:#9DA3AE;font-size:14px;">No tenés direcciones guardadas</div>'}
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:16px;border:1px solid #E2E4E8;">
+        <div style="font-size:13px;font-weight:700;color:#0D0D0D;margin-bottom:12px;">Agregar dirección</div>
+        <input id="dir-nombre" placeholder="Nombre (ej: Casa, Trabajo)" style="width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:12px 14px;font-size:14px;margin-bottom:10px;outline:none;"/>
+        <input id="dir-calle" placeholder="Calle y número" style="width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:12px 14px;font-size:14px;margin-bottom:12px;outline:none;"/>
+        <button onclick="guardarDireccion()" style="width:100%;background:#FF6B35;color:#fff;border:none;border-radius:10px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;">Guardar dirección</button>
+      </div>`;
+  } else if (tipo === 'pagos') {
+    titulo.textContent = 'Métodos de pago';
+    contenido.innerHTML = `
+      <div style="background:#fff;border-radius:14px;padding:16px;border:1px solid #E2E4E8;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:#5C6270;margin-bottom:12px;text-transform:uppercase;font-size:11px;letter-spacing:.06em;">Elegí tu método preferido</div>
+        ${['mercadopago','efectivo','transferencia'].map(m => `
+          <div onclick="selMetodoPago('${m}')" style="display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid #F0F1F3;cursor:pointer;">
+            <div style="width:40px;height:40px;border-radius:12px;background:${m==='mercadopago'?'#E6F0FF':m==='efectivo'?'#E8F5E9':'#FEF3C7'};display:flex;align-items:center;justify-content:center;font-size:20px;">
+              ${m==='mercadopago'?'💙':m==='efectivo'?'💵':'🔄'}
+            </div>
+            <div style="flex:1;font-size:14px;font-weight:600;color:#0D0D0D;">${m==='mercadopago'?'MercadoPago':m==='efectivo'?'Efectivo':'Transferencia'}</div>
+            <div style="width:20px;height:20px;border-radius:50%;border:2px solid ${metodoPagoGuardado===m?'#FF6B35':'#E0E0E0'};background:${metodoPagoGuardado===m?'#FF6B35':'#fff'};display:flex;align-items:center;justify-content:center;">
+              ${metodoPagoGuardado===m?'<div style="width:8px;height:8px;border-radius:50%;background:#fff;"></div>':''}
+            </div>
+          </div>`).join('')}
+      </div>
+      <div style="background:#FFF8F6;border-radius:14px;padding:14px;border:1px solid #FFD5C2;font-size:12px;color:#E55A27;line-height:1.6;">
+        💡 Podés cambiar el método de pago en cada pedido al momento de confirmar.
+      </div>`;
+  } else if (tipo === 'notificaciones') {
+    titulo.textContent = 'Notificaciones';
+    contenido.innerHTML = `
+      <div style="background:#fff;border-radius:14px;border:1px solid #E2E4E8;overflow:hidden;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#0D0D0D;">Estado de pedidos</div>
+            <div style="font-size:12px;color:#9DA3AE;margin-top:3px;">Cuando tu pedido cambia de estado</div>
+          </div>
+          <div onclick="toggleNotif('pedidos')" style="width:48px;height:26px;border-radius:13px;background:${notifPedidos?'#FF6B35':'#E0E0E0'};cursor:pointer;position:relative;transition:.2s;">
+            <div style="width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:.2s;${notifPedidos?'right:2px;':'left:2px;'}"></div>
+          </div>
+        </div>
+        <div style="border-top:1px solid #F0F1F3;display:flex;justify-content:space-between;align-items:center;padding:16px;">
+          <div>
+            <div style="font-size:14px;font-weight:700;color:#0D0D0D;">Promociones y ofertas</div>
+            <div style="font-size:12px;color:#9DA3AE;margin-top:3px;">Descuentos y novedades de comercios</div>
+          </div>
+          <div onclick="toggleNotif('promos')" style="width:48px;height:26px;border-radius:13px;background:${notifPromos?'#FF6B35':'#E0E0E0'};cursor:pointer;position:relative;transition:.2s;">
+            <div style="width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:.2s;${notifPromos?'right:2px;':'left:2px;'}"></div>
+          </div>
+        </div>
+      </div>`;
+  }
+}
+
+function cerrarPantallaExtra() {
+  document.getElementById('pantalla-extra').style.display = 'none';
+}
+
+function guardarDireccion() {
+  const nombre = document.getElementById('dir-nombre').value.trim();
+  const dir = document.getElementById('dir-calle').value.trim();
+  if (!nombre || !dir) { showToast('Completá los dos campos'); return; }
+  direcciones.push({ nombre, dir });
+  localStorage.setItem('pap_direcciones', JSON.stringify(direcciones));
+  showToast('✅ Dirección guardada');
+  abrirPantallaExtra('direcciones');
+}
+
+function borrarDireccion(i) {
+  direcciones.splice(i, 1);
+  localStorage.setItem('pap_direcciones', JSON.stringify(direcciones));
+  abrirPantallaExtra('direcciones');
+}
+
+function selMetodoPago(m) {
+  metodoPagoGuardado = m;
+  localStorage.setItem('pap_metodo_pago', m);
+  showToast('✅ Método de pago guardado');
+  abrirPantallaExtra('pagos');
+}
+
+function toggleNotif(tipo) {
+  if (tipo === 'pedidos') {
+    notifPedidos = !notifPedidos;
+    localStorage.setItem('pap_notif_pedidos', notifPedidos);
+  } else {
+    notifPromos = !notifPromos;
+    localStorage.setItem('pap_notif_promos', notifPromos);
+  }
+  abrirPantallaExtra('notificaciones');
+}
+
+// ── UBICACIÓN AUTOMÁTICA
 let ubicacionActual = localStorage.getItem('pap_ubicacion') || 'Mi ubicación';
 
 function setUbicacionTexto(txt) {
