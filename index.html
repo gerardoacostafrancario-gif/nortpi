@@ -1119,7 +1119,7 @@ function getDireccionEntrega() {
 async function actualizarDirGPS() {
   if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(async (pos) => {
-    const dir = await obtenerDireccionExacta(pos.coords.latitude, pos.coords.longitude);
+    const dir = await obtenerDireccionDesdePin(pos.coords.latitude, pos.coords.longitude);
     const gpsTxt = document.getElementById('dir-gps-txt');
     if (gpsTxt) gpsTxt.textContent = dir;
     ubicacionActual = dir;
