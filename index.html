@@ -562,7 +562,7 @@ function go(screen) {
   const navMap = {home:'nav-home',pedidos:'nav-pedidos',carrito:'nav-carrito',perfil:'nav-perfil'};
   if (navMap[screen]) document.getElementById(navMap[screen]).classList.add('active');
   currentScreen = screen;
-  if (screen === 'carrito') { renderCarrito(); cargarDireccionesEnCarrito(); }
+  if (screen === 'carrito') { renderCarrito(); cargarDireccionesEnCarrito(); actualizarDirGPS(); }
   if (screen === 'pedidos') cargarPedidos();
   window.scrollTo(0,0);
 }
@@ -857,16 +857,38 @@ function selDireccion(tipo) {
   if (inputNueva) inputNueva.style.display = tipo === 'nueva' ? 'block' : 'none';
 }
 
+async function obtenerDireccionExacta(lat, lng) {
+  try {
+    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GMAPS_KEY}&language=es`);
+    const data = await res.json();
+    if (data.status === 'OK' && data.results.length > 0) {
+      return data.results[0].formatted_address;
+    }
+  } catch {}
+  return ubicacionActual;
+}
+
 function getDireccionEntrega() {
   if (dirEntregaSeleccionada === 'gps') return ubicacionActual || 'Ubicación actual';
   if (dirEntregaSeleccionada === 'nueva') {
     const txt = document.getElementById('dir-nueva-txt')?.value.trim();
     return txt || 'Dirección no especificada';
   }
-  // Dirección guardada
   const idx = parseInt(dirEntregaSeleccionada.replace('saved-',''));
   const dirs = JSON.parse(localStorage.getItem('pap_direcciones') || '[]');
   return dirs[idx] ? `${dirs[idx].nombre}: ${dirs[idx].dir}` : ubicacionActual;
+}
+
+// Actualizar texto GPS del carrito con dirección exacta
+async function actualizarDirGPS() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const dir = await obtenerDireccionExacta(pos.coords.latitude, pos.coords.longitude);
+    const gpsTxt = document.getElementById('dir-gps-txt');
+    if (gpsTxt) gpsTxt.textContent = dir;
+    ubicacionActual = dir;
+    localStorage.setItem('pap_ubicacion', dir);
+  }, () => {}, { enableHighAccuracy: true });
 }
 
 function renderCarrito() {
@@ -1235,6 +1257,8 @@ function setUbicacionTexto(txt) {
   document.getElementById('ubicacion-txt').textContent = txt.length > 22 ? txt.slice(0,22)+'…' : txt;
 }
 
+const GMAPS_KEY = 'AIzaSyASBhagsg9KOoRLRaXmI8BEw9VMvf3dQo0';
+
 async function detectarUbicacion() {
   if (!navigator.geolocation) {
     setUbicacionTexto(localStorage.getItem('pap_ubicacion') || 'Mi ubicación');
@@ -1244,21 +1268,29 @@ async function detectarUbicacion() {
     async (pos) => {
       try {
         const { latitude: lat, longitude: lng } = pos.coords;
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`);
+        const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GMAPS_KEY}&language=es&result_type=sublocality|locality|administrative_area_level_2`);
         const data = await res.json();
-        const ciudad = data.address?.city || data.address?.town || data.address?.village || data.address?.county || 'Mi ubicación';
-        const provincia = data.address?.state || '';
-        setUbicacionTexto(ciudad + (provincia ? ', ' + provincia : ''));
+        if (data.status === 'OK' && data.results.length > 0) {
+          const comps = data.results[0].address_components;
+          // Buscar el nombre más específico
+          const sublocal = comps.find(c => c.types.includes('sublocality_level_1') || c.types.includes('sublocality'))?.long_name;
+          const localidad = comps.find(c => c.types.includes('locality'))?.long_name;
+          const partido = comps.find(c => c.types.includes('administrative_area_level_2'))?.long_name;
+          const provincia = comps.find(c => c.types.includes('administrative_area_level_1'))?.long_name;
+          const lugar = sublocal || localidad || partido || 'Mi ubicación';
+          setUbicacionTexto(lugar + (provincia && lugar !== provincia ? ', ' + provincia : ''));
+        } else {
+          setUbicacionTexto(localStorage.getItem('pap_ubicacion') || 'Mi ubicación');
+        }
       } catch {
         setUbicacionTexto(localStorage.getItem('pap_ubicacion') || 'Mi ubicación');
       }
     },
     () => {
-      // Sin permiso — mostrar lo guardado o pedir manual
       const guardada = localStorage.getItem('pap_ubicacion');
       setUbicacionTexto(guardada || '📍 Actualizar ubicación');
     },
-    { timeout: 8000, maximumAge: 300000 }
+    { timeout: 8000, maximumAge: 60000, enableHighAccuracy: true }
   );
 }
 
