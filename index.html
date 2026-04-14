@@ -1073,36 +1073,6 @@ async function obtenerDireccionDesdePin(lat, lng) {
     return partes.join(', ') || 'Ubicación seleccionada';
   } catch { return 'Ubicación seleccionada'; }
 }
-  try {
-    const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GMAPS_KEY}&language=es`);
-    const data = await res.json();
-    if (data.status === 'OK' && data.results.length > 0) {
-      for (const result of data.results) {
-        const c = result.address_components;
-        if (c.some(x => x.types.includes('plus_code'))) continue;
-        const calle = c.find(x => x.types.includes('route'))?.long_name;
-        const numero = c.find(x => x.types.includes('street_number'))?.long_name;
-        const barrio = c.find(x => x.types.includes('locality') || x.types.includes('sublocality'))?.long_name;
-        const ciudad = c.find(x => x.types.includes('administrative_area_level_2'))?.long_name;
-        const provincia = c.find(x => x.types.includes('administrative_area_level_1'))?.long_name;
-        const partes = [];
-        if (calle && numero) partes.push(`${calle} ${numero}`);
-        else if (calle) partes.push(calle);
-        if (barrio && barrio !== ciudad) partes.push(barrio);
-        if (ciudad) partes.push(ciudad);
-        if (provincia && provincia !== ciudad && provincia !== barrio) partes.push(provincia);
-        if (partes.length) return partes.join(', ');
-      }
-      // Fallback
-      const c = data.results[0].address_components;
-      const barrio = c.find(x => x.types.includes('locality') || x.types.includes('sublocality'))?.long_name;
-      const ciudad = c.find(x => x.types.includes('administrative_area_level_2'))?.long_name;
-      const provincia = c.find(x => x.types.includes('administrative_area_level_1'))?.long_name;
-      return [barrio, ciudad, provincia].filter(Boolean).join(', ') || 'Mi ubicación';
-    }
-  } catch {}
-  return ubicacionActual;
-}
 
 function getDireccionEntrega() {
   if (dirEntregaSeleccionada === 'gps') return ubicacionActual || 'Ubicación actual';
