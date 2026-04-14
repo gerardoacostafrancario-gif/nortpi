@@ -256,49 +256,36 @@ function stab(t){document.querySelectorAll('.tab').forEach(x=>x.classList.remove
 async function cargarUsuarios(){
   document.getElementById('usuarios-container').innerHTML='<div style="text-align:center;padding:30px;color:var(--g400);">Cargando...</div>';
   try {
-    const {data,error} = await sb.auth.admin.listUsers();
+    const {data,error} = await sb.from('profiles').select('*').order('created_at',{ascending:false});
     if(error) throw error;
-    const usuarios = data.users || [];
-    renderUsuarios(usuarios);
-  } catch {
-    // Fallback — mostrar datos de Supabase auth via tabla profiles si existe
-    try {
-      const {data} = await sb.from('profiles').select('*').order('created_at',{ascending:false});
-      if(data && data.length) { renderUsuariosFromProfiles(data); return; }
-    } catch {}
-    // Demo
-    renderUsuarios([
-      {id:'u1',email:'gerardoacostafrancario@gmail.com',user_metadata:{full_name:'Gerardo Acosta',role:'usuario'},app_metadata:{provider:'google'},created_at:new Date().toISOString()},
-      {id:'u2',email:'test@gmail.com',user_metadata:{full_name:'Juan García',role:'comercio'},app_metadata:{provider:'email'},created_at:new Date(Date.now()-86400000).toISOString()},
-      {id:'u3',email:'cadete@gmail.com',user_metadata:{full_name:'Miguel González',role:'cadete'},app_metadata:{provider:'google'},created_at:new Date(Date.now()-172800000).toISOString()},
-    ]);
+    renderUsuarios(data||[]);
+  } catch(e) {
+    document.getElementById('usuarios-container').innerHTML='<div style="text-align:center;padding:30px;color:var(--g400);">Error al cargar usuarios. Verificá la tabla profiles en Supabase.</div>';
   }
 }
 
 function renderUsuarios(usuarios){
   const rolColor={usuario:'pb',comercio:'po',cadete:'pg'};
   const rolLabel={usuario:'👤 Usuario',comercio:'🏪 Comercio',cadete:'🏍️ Cadete'};
-  const hoy = new Date().toDateString();
-  const totalHoy = usuarios.filter(u=>new Date(u.created_at).toDateString()===hoy).length;
-  const conGoogle = usuarios.filter(u=>u.app_metadata?.provider==='google').length;
-  document.getElementById('u-total').textContent = usuarios.length;
-  document.getElementById('u-hoy').textContent = totalHoy;
-  document.getElementById('u-google').textContent = conGoogle;
-
+  const hoy=new Date().toDateString();
+  const totalHoy=usuarios.filter(u=>new Date(u.created_at).toDateString()===hoy).length;
+  const conGoogle=usuarios.filter(u=>u.provider==='google').length;
+  document.getElementById('u-total').textContent=usuarios.length;
+  document.getElementById('u-hoy').textContent=totalHoy;
+  document.getElementById('u-google').textContent=conGoogle;
   if(!usuarios.length){
     document.getElementById('usuarios-container').innerHTML='<div style="text-align:center;padding:30px;color:var(--g400);">Sin usuarios registrados.</div>';
     return;
   }
-
-  document.getElementById('usuarios-container').innerHTML = usuarios.map(u=>{
-    const rol = u.user_metadata?.role || 'usuario';
-    const nombre = u.user_metadata?.full_name || u.email?.split('@')[0] || '—';
-    const proveedor = u.app_metadata?.provider === 'google' ? '🔵 Google' : '📧 Email';
-    const fecha = new Date(u.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
-    return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;padding:12px 16px;border-bottom:1px solid var(--g100);align-items:center;">
+  document.getElementById('usuarios-container').innerHTML=usuarios.map(u=>{
+    const rol=u.role||'usuario';
+    const nombre=u.full_name||u.email?.split('@')[0]||'—';
+    const proveedor=u.provider==='google'?'🔵 Google':'📧 Email';
+    const fecha=new Date(u.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+    return`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;padding:12px 16px;border-bottom:1px solid var(--g100);align-items:center;">
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--black);">${nombre}</div>
-        <div style="font-size:10px;color:var(--g400);margin-top:2px;">${u.email} · ${proveedor}</div>
+        <div style="font-size:10px;color:var(--g400);margin-top:2px;">${u.email||''} · ${proveedor}</div>
       </div>
       <div style="text-align:center;"><span class="pill ${rolColor[rol]||'pgr'}">${rolLabel[rol]||rol}</span></div>
       <div style="text-align:right;font-size:11px;color:var(--g400);">${fecha}</div>
