@@ -11,7 +11,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>Puerta a Puerta — Tu pedido, ya mismo.</title>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyASBhagsg9KOoRLRaXmI8BEw9VMvf3dQo0&libraries=places&language=es" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -454,9 +453,9 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
       <div id="input-dir-nueva" style="display:none;margin-top:8px;position:relative;">
         <input id="dir-nueva-txt" placeholder="Ej: San Martín 450, La Banda" 
           style="width:100%;border:1.5px solid #E0E0E0;border-radius:10px;padding:12px 14px;font-size:13px;outline:none;font-family:inherit;"
-          oninput="autocompletarDireccion(this.value)"
+          oninput="buscarDireccion(this.value)"
           autocomplete="off"/>
-        <div id="autocomplete-lista" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:500;background:#fff;border-radius:0 0 12px 12px;box-shadow:0 8px 24px rgba(0,0,0,.15);overflow:hidden;max-height:200px;overflow-y:auto;border:1px solid #E0E0E0;border-top:none;"></div>
+        <div id="sugerencias-dir" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:500;background:#fff;border-radius:0 0 12px 12px;box-shadow:0 8px 24px rgba(0,0,0,.15);overflow:hidden;border:1px solid #E0E0E0;border-top:none;"></div>
       </div>
     </div>
   </div>
@@ -722,39 +721,45 @@ function filtrar(el, cat) {
   abrirRubro(cat, RUBROS.find(r=>r.id===cat)?.label || cat);
 }
 
-// ── AUTOCOMPLETADO DE DIRECCIÓN con Google Places ──
-let autocompleteWidget = null;
-let autocompleteIniciado = false;
+// ── AUTOCOMPLETADO DE DIRECCIÓN (sin widget, sin bugs) ──
+let dirTimer = null;
 
-function initAutocomplete() {
-  // Se llama cuando el usuario toca "Escribir otra dirección"
-  if (autocompleteIniciado) return;
-  const input = document.getElementById('dir-nueva-txt');
-  if (!input || !window.google?.maps?.places) return;
-  autocompleteIniciado = true;
-  const ac = new google.maps.places.Autocomplete(input, {
-    types: ['geocode'],
-    componentRestrictions: { country: 'ar' },
-    fields: ['formatted_address']
-  });
-  // Evitar que Google bloquee el submit del formulario
-  ac.addListener('place_changed', () => {
-    const place = ac.getPlace();
-    if (place?.formatted_address) {
-      input.value = place.formatted_address;
-      selDireccion('nueva');
-    }
-  });
+async function buscarDireccion(q) {
+  const sugs = document.getElementById('sugerencias-dir');
+  if (!sugs) return;
+  if (!q || q.length < 3) { sugs.style.display = 'none'; return; }
+  clearTimeout(dirTimer);
+  dirTimer = setTimeout(async () => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=ar&format=json&limit=5&accept-language=es`);
+      const data = await res.json();
+      if (data.length) {
+        sugs.style.display = 'block';
+        sugs.innerHTML = data.map(r => {
+          const nombre = r.display_name.split(',').slice(0,3).join(',');
+          return `<div onclick="elegirDireccion('${nombre.replace(/'/g,"\\'")}')"
+            style="padding:12px 14px;border-bottom:1px solid #F5F5F5;font-size:13px;cursor:pointer;display:flex;gap:10px;align-items:center;"
+            onmouseover="this.style.background='#FFF8F6'" onmouseout="this.style.background='#fff'">
+            <span style="font-size:14px;flex-shrink:0;">📍</span>
+            <span style="color:#0D0D0D;">${nombre}</span>
+          </div>`;
+        }).join('');
+      } else {
+        sugs.style.display = 'none';
+      }
+    } catch { sugs.style.display = 'none'; }
+  }, 500);
 }
 
-function autocompletarDireccion(q) {
-  // El widget se encarga automáticamente
-}
-
-function seleccionarDireccion(descripcion) {
-  document.getElementById('dir-nueva-txt').value = descripcion;
+function elegirDireccion(dir) {
+  document.getElementById('dir-nueva-txt').value = dir;
+  document.getElementById('sugerencias-dir').style.display = 'none';
   selDireccion('nueva');
 }
+
+function initAutocomplete() {}
+function autocompletarDireccion() {}
+function seleccionarDireccion(d) { elegirDireccion(d); }
 
 // ── BÚSQUEDA EN TIEMPO REAL ──
 let searchTimeout = null;
@@ -1033,10 +1038,7 @@ function selDireccion(tipo) {
   if (inputNueva) {
     inputNueva.style.display = tipo === 'nueva' ? 'block' : 'none';
     if (tipo === 'nueva') {
-      setTimeout(() => {
-        initAutocomplete();
-        document.getElementById('dir-nueva-txt')?.focus();
-      }, 200);
+      setTimeout(() => document.getElementById('dir-nueva-txt')?.focus(), 100);
     }
   }
 }
