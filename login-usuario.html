@@ -263,7 +263,7 @@ async function loginGoogle() {
   try {
     const { error } = await sb.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin + '/index.html' }
+      options: { redirectTo: 'https://puertaapuerta.vercel.app/index.html' }
     });
     if (error) throw error;
   } catch(e) {
@@ -318,7 +318,7 @@ async function olvideClave() {
   const email = document.getElementById('input-email').value.trim();
   if (!email) { showError('Escribí tu email primero.'); return; }
   try {
-    await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/index.html' });
+    await sb.auth.resetPasswordForEmail(email, { redirectTo: 'https://puertaapuerta.vercel.app/index.html' });
     showOk('Te enviamos un email para restablecer tu contraseña.');
   } catch(e) {
     showError('Error al enviar el email.');
