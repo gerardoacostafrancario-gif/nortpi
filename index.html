@@ -738,50 +738,77 @@ let lngEntrega = null;
 
 async function iniciarMapaCarrito() {
   const div = document.getElementById('mapa-carrito');
-  if (!div || !window.google) return;
-  navigator.geolocation.getCurrentPosition(async (pos) => {
-    latEntrega = pos.coords.latitude;
-    lngEntrega = pos.coords.longitude;
-    const centro = { lat: latEntrega, lng: lngEntrega };
+  if (!div) return;
+
+  // Esperar a que Google Maps cargue
+  if (!window.google?.maps) {
+    setTimeout(iniciarMapaCarrito, 500);
+    return;
+  }
+
+  // Si ya está iniciado, solo centrar en ubicación actual
+  if (mapaCarrito && markerCarrito) {
+    navigator.geolocation.getCurrentPosition(pos => {
+      const centro = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      mapaCarrito.setCenter(centro);
+      markerCarrito.setPosition(centro);
+    }, null, { enableHighAccuracy: true });
+    return;
+  }
+
+  // Coordenadas iniciales de La Banda como fallback
+  const fallbackLat = -27.7333, fallbackLng = -64.2667;
+
+  const crearMapa = (lat, lng) => {
+    latEntrega = lat;
+    lngEntrega = lng;
+    const centro = { lat, lng };
+
     mapaCarrito = new google.maps.Map(div, {
       center: centro,
       zoom: 17,
       disableDefaultUI: true,
       zoomControl: true,
-      styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }]
     });
-    // Pin con palito estilo Google Maps en naranja
+
     markerCarrito = new google.maps.Marker({
       position: centro,
       map: mapaCarrito,
       draggable: true,
       icon: {
         url: 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png',
-        scaledSize: new google.maps.Size(32, 32),
-        anchor: new google.maps.Point(16, 32),
-      },
-      title: 'Arrastrá para ajustar'
+        scaledSize: new google.maps.Size(36, 36),
+        anchor: new google.maps.Point(18, 36),
+      }
     });
+
     // Actualizar dirección al soltar el pin
     markerCarrito.addListener('dragend', async () => {
       const p = markerCarrito.getPosition();
       latEntrega = p.lat();
       lngEntrega = p.lng();
-      document.getElementById('dir-gps-txt').textContent = 'Actualizando...';
+      const gpsTxt = document.getElementById('dir-gps-txt');
+      if (gpsTxt) gpsTxt.textContent = 'Actualizando...';
       const dir = await obtenerDireccionExacta(latEntrega, lngEntrega);
-      document.getElementById('dir-gps-txt').textContent = dir;
+      if (gpsTxt) gpsTxt.textContent = dir;
       ubicacionActual = dir;
       localStorage.setItem('pap_ubicacion', dir);
       selDireccion('gps');
     });
-    // Mostrar dirección inicial
-    const dirInicial = await obtenerDireccionExacta(latEntrega, lngEntrega);
-    document.getElementById('dir-gps-txt').textContent = dirInicial;
-    ubicacionActual = dirInicial;
-  }, () => {
-    const fallback = { lat: -27.7333, lng: -64.2667 };
-    mapaCarrito = new google.maps.Map(div, { center: fallback, zoom: 14, disableDefaultUI: true, zoomControl: true });
-  }, { enableHighAccuracy: true, timeout: 8000 });
+
+    // Mostrar dirección inicial debajo del mapa
+    obtenerDireccionExacta(lat, lng).then(dir => {
+      const gpsTxt = document.getElementById('dir-gps-txt');
+      if (gpsTxt) gpsTxt.textContent = dir;
+      ubicacionActual = dir;
+    });
+  };
+
+  navigator.geolocation.getCurrentPosition(
+    pos => crearMapa(pos.coords.latitude, pos.coords.longitude),
+    () => crearMapa(fallbackLat, fallbackLng),
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+  );
 }
 
 // ── AUTOCOMPLETADO DE DIRECCIÓN (sin widget, sin bugs) ──
