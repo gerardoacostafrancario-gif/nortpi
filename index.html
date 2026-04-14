@@ -1248,8 +1248,10 @@ function toggleNotif(tipo) {
   abrirPantallaExtra('notificaciones');
 }
 
-// ── UBICACIÓN AUTOMÁTICA
-let ubicacionActual = localStorage.getItem('pap_ubicacion') || 'Mi ubicación';
+// ── UBICACIÓN AUTOMÁTICA ──
+let ubicacionActual = '';
+// Limpiar caché viejo de ubicación para forzar detección nueva
+localStorage.removeItem('pap_ubicacion');
 
 function setUbicacionTexto(txt) {
   ubicacionActual = txt;
@@ -1264,15 +1266,16 @@ async function detectarUbicacion() {
     setUbicacionTexto(localStorage.getItem('pap_ubicacion') || 'Mi ubicación');
     return;
   }
+  // Mostrar "Detectando..." mientras busca
+  document.getElementById('ubicacion-txt').textContent = 'Detectando...';
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
       try {
         const { latitude: lat, longitude: lng } = pos.coords;
-        const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GMAPS_KEY}&language=es&result_type=sublocality|locality|administrative_area_level_2`);
+        const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GMAPS_KEY}&language=es`);
         const data = await res.json();
         if (data.status === 'OK' && data.results.length > 0) {
           const comps = data.results[0].address_components;
-          // Buscar el nombre más específico
           const sublocal = comps.find(c => c.types.includes('sublocality_level_1') || c.types.includes('sublocality'))?.long_name;
           const localidad = comps.find(c => c.types.includes('locality'))?.long_name;
           const partido = comps.find(c => c.types.includes('administrative_area_level_2'))?.long_name;
@@ -1280,17 +1283,16 @@ async function detectarUbicacion() {
           const lugar = sublocal || localidad || partido || 'Mi ubicación';
           setUbicacionTexto(lugar + (provincia && lugar !== provincia ? ', ' + provincia : ''));
         } else {
-          setUbicacionTexto(localStorage.getItem('pap_ubicacion') || 'Mi ubicación');
+          setUbicacionTexto('Mi ubicación');
         }
       } catch {
-        setUbicacionTexto(localStorage.getItem('pap_ubicacion') || 'Mi ubicación');
+        setUbicacionTexto('Mi ubicación');
       }
     },
-    () => {
-      const guardada = localStorage.getItem('pap_ubicacion');
-      setUbicacionTexto(guardada || '📍 Actualizar ubicación');
+    (err) => {
+      setUbicacionTexto('📍 Activar ubicación');
     },
-    { timeout: 8000, maximumAge: 60000, enableHighAccuracy: true }
+    { timeout: 10000, maximumAge: 0, enableHighAccuracy: true }
   );
 }
 
