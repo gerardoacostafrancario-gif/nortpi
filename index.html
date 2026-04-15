@@ -134,6 +134,8 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
 .back{display:flex;align-items:center;gap:6px;color:var(--brand);font-size:13px;font-weight:600;cursor:pointer;margin-bottom:14px;width:fit-content;}
 .det-name{font-size:20px;font-weight:800;color:var(--white);margin-bottom:5px;letter-spacing:-.3px;}
 
+@keyframes pulseRed{0%,100%{box-shadow:0 4px 15px rgba(220,38,38,.35);}50%{box-shadow:0 4px 25px rgba(220,38,38,.6);transform:scale(1.01);}}
+
 /* ─── RATINGS DEL COMERCIO ─── */
 .ratings-section{padding:16px 18px;background:var(--white);border-top:1px solid var(--gray-100);}
 .rating-resumen{display:flex;align-items:center;gap:16px;margin-bottom:16px;}
@@ -571,8 +573,13 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
     </div>
   </div>
   <div id="btn-devolucion-wrap" style="display:none;padding:16px 18px;">
-    <button onclick="abrirDevolucion()" style="width:100%;background:#FEE2E2;color:#DC2626;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;">
-      ⚠️ Reportar un problema con mi pedido
+    <button onclick="abrirDevolucion()" style="width:100%;background:linear-gradient(135deg,#DC2626,#EF4444);color:#fff;border:none;border-radius:14px;padding:16px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(220,38,38,.35);animation:pulseRed 2s infinite;display:flex;align-items:center;justify-content:center;gap:10px;">
+      <span style="font-size:20px;">⚠️</span>
+      <div style="text-align:left;">
+        <div>¿Tuviste un problema con tu pedido?</div>
+        <div style="font-size:11px;opacity:.85;margin-top:2px;">Tocá acá para reportarlo — lo resolvemos en 5 min</div>
+      </div>
+      <span style="font-size:18px;margin-left:auto;">›</span>
     </button>
   </div>
 </div>
@@ -922,23 +929,109 @@ function cerrarDevolucion() {
 
 async function reportarProblema(tipo) {
   cerrarDevolucion();
+
+  const tipoLabel = {
+    'no-llegó': 'No llegó lo que pedí',
+    'mal-estado': 'Llegó en mal estado',
+    'faltó-algo': 'Faltó algo en el pedido',
+    'no-llegó-pedido': 'No recibí el pedido',
+  }[tipo] || tipo;
+
+  // Guardar reporte en Supabase
   try {
     await sb.from('reportes').insert([{
       pedido_id: currentPedido?.id,
       comercio_id: currentComercio?.id,
       tipo,
       estado: 'pendiente',
+      limite_resolucion: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
     }]);
-  } catch(e) {}
-  showToast('✅ Reporte enviado. El admin lo va a revisar en breve.', 4000);
-  // Agregar advertencia al comercio
-  try {
     await sb.from('advertencias_comercio').insert([{
       comercio_id: currentComercio?.id,
       motivo: tipo,
       pedido_id: currentPedido?.id,
     }]);
   } catch(e) {}
+
+  // Mostrar pantalla de seguimiento del reporte
+  mostrarSeguimientoReporte(tipoLabel);
+}
+
+function mostrarSeguimientoReporte(tipoLabel) {
+  // Crear overlay de seguimiento
+  const overlay = document.createElement('div');
+  overlay.id = 'reporte-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:800;background:#fff;display:flex;flex-direction:column;';
+  
+  let segundos = 300; // 5 minutos
+  
+  overlay.innerHTML = `
+    <div style="background:#0D0D0D;padding:20px 18px 24px;">
+      <div style="color:#FF6B35;font-size:13px;font-weight:600;margin-bottom:12px;">← <span onclick="document.getElementById('reporte-overlay').remove()" style="cursor:pointer;">Volver</span></div>
+      <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;">Reporte enviado ✅</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.6);">${tipoLabel}</div>
+    </div>
+    <div style="padding:24px 18px;flex:1;">
+      
+      <!-- Cuenta regresiva -->
+      <div style="background:#FFF8F6;border-radius:16px;padding:20px;margin-bottom:20px;text-align:center;border:2px solid #FF6B35;">
+        <div style="font-size:13px;color:#9DA3AE;margin-bottom:8px;font-weight:600;">EL COMERCIO TIENE</div>
+        <div id="countdown-display" style="font-size:52px;font-weight:900;color:#FF6B35;font-variant-numeric:tabular-nums;">05:00</div>
+        <div style="font-size:13px;color:#9DA3AE;margin-top:8px;">para resolver tu problema</div>
+      </div>
+
+      <!-- Qué pasa si no resuelven -->
+      <div style="background:#F8F8F8;border-radius:14px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:800;color:#0D0D0D;margin-bottom:10px;">📋 Tus derechos como usuario</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;flex-shrink:0;">✅</span>
+            <div style="font-size:12px;color:#5C6270;line-height:1.5;">Si el comercio no resuelve en 5 minutos, <strong>el reenvío es gratis</strong> para vos.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;flex-shrink:0;">💰</span>
+            <div style="font-size:12px;color:#5C6270;line-height:1.5;">El comercio <strong>paga la comisión igual</strong>, más el costo del reenvío.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;flex-shrink:0;">⚠️</span>
+            <div style="font-size:12px;color:#5C6270;line-height:1.5;">Si mandan algo incorrecto nuevamente, <strong>se les cobra una penalización</strong>.</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start;">
+            <span style="font-size:16px;flex-shrink:0;">🚫</span>
+            <div style="font-size:12px;color:#5C6270;line-height:1.5;">3 reportes confirmados = <strong>suspensión automática</strong> del comercio.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado -->
+      <div style="background:#E8F5E9;border-radius:14px;padding:14px;text-align:center;">
+        <div style="font-size:12px;font-weight:700;color:#2E7D32;" id="reporte-estado">🔄 Notificando al comercio y al administrador...</div>
+      </div>
+    </div>`;
+  
+  document.body.appendChild(overlay);
+
+  // Cuenta regresiva
+  const interval = setInterval(() => {
+    segundos--;
+    const min = Math.floor(segundos / 60).toString().padStart(2,'0');
+    const seg = (segundos % 60).toString().padStart(2,'0');
+    const display = document.getElementById('countdown-display');
+    if (display) display.textContent = `${min}:${seg}`;
+    
+    if (segundos <= 60) {
+      if (display) display.style.color = '#DC2626';
+    }
+    if (segundos <= 0) {
+      clearInterval(interval);
+      const estado = document.getElementById('reporte-estado');
+      if (estado) {
+        estado.style.background = '#FEE2E2';
+        estado.style.color = '#DC2626';
+        estado.textContent = '⏰ Tiempo vencido — el admin ya fue notificado para resolver tu caso.';
+      }
+    }
+  }, 1000);
 }
 
 // Mostrar botón de devolución cuando se entrega el pedido
