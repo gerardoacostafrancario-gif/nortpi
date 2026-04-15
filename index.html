@@ -314,6 +314,36 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
   </div>
 </div>
 
+<!-- PANTALLA CHAT REPORTE -->
+<div class="screen" id="s-chat-reporte">
+  <div style="background:#0D0D0D;padding:16px 18px 20px;flex-shrink:0;">
+    <div style="color:#FF6B35;font-size:13px;font-weight:600;margin-bottom:10px;cursor:pointer;" onclick="go('tracking')">← Volver</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:18px;font-weight:800;color:#fff;" id="chat-reporte-titulo">Reporte enviado ✅</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5);margin-top:2px;" id="chat-reporte-subtitulo"></div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:10px;color:#9DA3AE;margin-bottom:2px;">TIEMPO LÍMITE</div>
+        <div id="chat-reporte-countdown" style="font-size:28px;font-weight:900;color:#FF6B35;font-variant-numeric:tabular-nums;">10:00</div>
+      </div>
+    </div>
+  </div>
+  <div style="background:#E8F5E9;padding:10px 16px;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+    <span>✅</span>
+    <div style="font-size:12px;color:#2E7D32;font-weight:600;">Si no se resuelve en 10 min, tu pedido se anula y recibís el reembolso gratis.</div>
+  </div>
+  <div id="chat-reporte-msgs" style="flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-height:200px;"></div>
+  <div style="background:#fff;padding:12px 16px;display:flex;gap:10px;align-items:center;border-top:1px solid #E0E0E0;">
+    <input id="chat-reporte-input" placeholder="Escribí tu mensaje al comercio..."
+      style="flex:1;border:1.5px solid #E0E0E0;border-radius:22px;padding:10px 16px;font-size:13px;outline:none;font-family:inherit;"
+      onkeydown="if(event.key==='Enter')enviarMsgReporte()"/>
+    <button onclick="enviarMsgReporte()" style="width:40px;height:40px;border-radius:50%;background:#FF6B35;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
 <!-- PANTALLA PEDIDO CONFIRMADO -->
 <div class="confirmado-screen" id="s-confirmado">
   <div class="conf-icono">🎉</div>
@@ -937,14 +967,23 @@ async function reportarProblema(tipo) {
     'no-llegó-pedido': 'No recibí el pedido',
   }[tipo] || tipo;
 
-  // Guardar reporte en Supabase
+  let reporteId = null;
+  const limite = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
   try {
-    await sb.from('reportes').insert([{
+    const { data } = await sb.from('reportes').insert([{
       pedido_id: currentPedido?.id,
       comercio_id: currentComercio?.id,
       tipo,
       estado: 'pendiente',
-      limite_resolucion: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+      limite_resolucion: limite,
+    }]).select().single();
+    reporteId = data?.id;
+    await sb.from('chat_reportes').insert([{
+      pedido_id: currentPedido?.id,
+      comercio_id: currentComercio?.id,
+      de: 'sistema',
+      texto: `Reporte: "${tipoLabel}". El comercio tiene 10 minutos para resolver.`,
     }]);
     await sb.from('advertencias_comercio').insert([{
       comercio_id: currentComercio?.id,
@@ -953,11 +992,114 @@ async function reportarProblema(tipo) {
     }]);
   } catch(e) {}
 
-  // Mostrar pantalla de seguimiento del reporte
-  mostrarSeguimientoReporte(tipoLabel);
+  abrirChatReporte(reporteId, tipoLabel, limite);
 }
 
-function mostrarSeguimientoReporte(tipoLabel) {
+// ── CHAT REPORTE USUARIO ──
+let chatReporteId = null;
+let chatReporteInterval = null;
+let chatReporteChannel = null;
+
+async function abrirChatReporte(reporteId, tipoLabel, limiteStr) {
+  chatReporteId = reporteId;
+  document.getElementById('chat-reporte-subtitulo').textContent = tipoLabel;
+  go('chat-reporte');
+
+  // Cargar mensajes existentes
+  await cargarMsgsChatReporte();
+
+  // Cuenta regresiva
+  if (chatReporteInterval) clearInterval(chatReporteInterval);
+  if (limiteStr) {
+    const limite = new Date(limiteStr);
+    chatReporteInterval = setInterval(() => {
+      const restante = Math.max(0, limite - new Date());
+      const min = Math.floor(restante/60000).toString().padStart(2,'0');
+      const seg = Math.floor((restante%60000)/1000).toString().padStart(2,'0');
+      const el = document.getElementById('chat-reporte-countdown');
+      if (el) {
+        el.textContent = `${min}:${seg}`;
+        el.style.color = restante < 120000 ? '#DC2626' : '#FF6B35';
+      }
+      if (restante <= 0) {
+        clearInterval(chatReporteInterval);
+        agregarMsgSistema('⏰ Tiempo vencido. Tu pedido fue anulado y recibís el reembolso.');
+      }
+    }, 1000);
+  }
+
+  // Suscripción Realtime
+  if (chatReporteChannel) sb.removeChannel(chatReporteChannel);
+  chatReporteChannel = sb.channel('chat-r-'+Date.now())
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_reportes' }, (payload) => {
+      const m = payload.new;
+      if (m.de === 'comercio') {
+        agregarBurbuja('comercio', m.texto, m.created_at);
+      }
+    }).subscribe();
+}
+
+async function cargarMsgsChatReporte() {
+  const cont = document.getElementById('chat-reporte-msgs');
+  if (!cont) return;
+  try {
+    const { data } = await sb.from('chat_reportes').select('*').order('created_at', { ascending: true });
+    cont.innerHTML = '';
+    if (!data || !data.length) {
+      cont.innerHTML = '<div style="text-align:center;color:#9DA3AE;font-size:13px;padding:20px;">Esperá la respuesta del comercio...</div>';
+      return;
+    }
+    data.forEach(m => {
+      if (m.de === 'sistema') agregarMsgSistema(m.texto);
+      else agregarBurbuja(m.de, m.texto, m.created_at);
+    });
+  } catch {}
+}
+
+function agregarBurbuja(de, texto, created_at) {
+  const cont = document.getElementById('chat-reporte-msgs');
+  if (!cont) return;
+  const hora = created_at ? new Date(created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}) : new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  const esUsuario = de === 'usuario';
+  const div = document.createElement('div');
+  div.style.cssText = `display:flex;justify-content:${esUsuario?'flex-end':'flex-start'};margin:4px 0;`;
+  if (esUsuario) {
+    div.innerHTML = `<div style="max-width:75%;background:#FF6B35;color:#fff;border-radius:16px 16px 4px 16px;padding:10px 14px;font-size:13px;line-height:1.4;">${texto}<div style="font-size:10px;opacity:.7;margin-top:4px;text-align:right;">${hora}</div></div>`;
+  } else {
+    div.innerHTML = `<div style="max-width:75%;background:#fff;color:#0D0D0D;border-radius:16px 16px 16px 4px;padding:10px 14px;font-size:13px;line-height:1.4;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+      <div style="font-size:10px;color:#FF6B35;font-weight:700;margin-bottom:4px;">🏪 ${currentComercio?.nombre||'Comercio'}</div>
+      ${texto}<div style="font-size:10px;color:#9DA3AE;margin-top:4px;">${hora}</div>
+    </div>`;
+  }
+  cont.appendChild(div);
+  cont.scrollTop = cont.scrollHeight;
+}
+
+function agregarMsgSistema(texto) {
+  const cont = document.getElementById('chat-reporte-msgs');
+  if (!cont) return;
+  const div = document.createElement('div');
+  div.style.cssText = 'text-align:center;margin:8px 0;';
+  div.innerHTML = `<span style="background:#E0E0E0;color:#5C6270;font-size:11px;padding:4px 12px;border-radius:20px;">${texto}</span>`;
+  cont.appendChild(div);
+  cont.scrollTop = cont.scrollHeight;
+}
+
+async function enviarMsgReporte() {
+  const input = document.getElementById('chat-reporte-input');
+  if (!input || !input.value.trim()) return;
+  const texto = input.value.trim();
+  input.value = '';
+  agregarBurbuja('usuario', texto, null);
+  try {
+    await sb.from('chat_reportes').insert([{
+      pedido_id: currentPedido?.id,
+      comercio_id: currentComercio?.id,
+      de: 'usuario',
+      texto,
+    }]);
+  } catch {}
+}
   const overlay = document.createElement('div');
   overlay.id = 'reporte-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:800;background:#F4F5F7;display:flex;flex-direction:column;';
@@ -1078,33 +1220,8 @@ function mostrarSeguimientoReporte(tipoLabel) {
   overlay.addEventListener('remove', () => clearInterval(interval));
 }
 
-function enviarMensajeChat() {
-  const input = document.getElementById('chat-input');
-  if (!input || !input.value.trim()) return;
-  const texto = input.value.trim();
-  input.value = '';
-  const hora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-  
-  // Agregar mensaje del usuario
-  const chat = document.getElementById('chat-mensajes');
-  if (chat) {
-    const div = document.createElement('div');
-    div.style.cssText = 'display:flex;justify-content:flex-end;margin:4px 0;';
-    div.innerHTML = `<div style="max-width:75%;background:#FF6B35;color:#fff;border-radius:16px 16px 4px 16px;padding:10px 14px;font-size:13px;line-height:1.4;">${texto}<div style="font-size:10px;opacity:.7;margin-top:4px;text-align:right;">${hora}</div></div>`;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
-  }
 
-  // Guardar en Supabase
-  try {
-    sb.from('chat_reportes').insert([{
-      pedido_id: currentPedido?.id,
-      comercio_id: currentComercio?.id,
-      de: 'usuario',
-      texto,
-    }]);
-  } catch(e) {}
-}
+
 
 // Mostrar botón de devolución cuando se entrega el pedido
 function mostrarBotonDevolucion() {
