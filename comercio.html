@@ -26,14 +26,17 @@ body{background:#f5f5f5;min-height:100vh;}
 .stat{background:#f9f9f9;border-radius:12px;padding:12px 10px;text-align:center;}
 .stat-val{font-size:22px;font-weight:700;color:#111;margin-bottom:2px;}
 .stat-lbl{font-size:10px;color:#888;}
-.tabs{display:flex;border-bottom:2px solid #f0f0f0;background:#fff;position:sticky;top:0;z-index:50;}
-.tab{flex:1;padding:12px 8px;text-align:center;font-size:12px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;}
+.tabs{display:flex;border-bottom:2px solid #f0f0f0;background:#fff;position:sticky;top:0;z-index:50;overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex-shrink:0;padding:12px 14px;text-align:center;font-size:12px;font-weight:500;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;}
 .tab.active{color:#FF6B35;border-bottom-color:#FF6B35;font-weight:700;}
 .badge-n{background:#FF6B35;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:3px;vertical-align:middle;}
+.badge-r{background:#DC2626;color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:3px;vertical-align:middle;}
 .sec{display:none;padding:14px;}
 .sec.active{display:block;}
 .ped-card{background:#fff;border:1.5px solid #f0f0f0;border-radius:14px;padding:14px;margin-bottom:12px;}
 .ped-card.nuevo{border-color:#FF6B35;}
+.ped-card.reporte{border-color:#DC2626;background:#FFF5F5;}
 .ped-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;}
 .ped-num{font-size:13px;font-weight:700;color:#111;}
 .ped-time{font-size:11px;color:#888;margin-top:2px;}
@@ -43,6 +46,7 @@ body{background:#f5f5f5;min-height:100vh;}
 .ep-cam{background:#E8F5E9;color:#2E7D32;}
 .ep-done{background:#F5F5F5;color:#555;}
 .ep-can{background:#FFEBEE;color:#B71C1C;}
+.ep-rep{background:#FFEBEE;color:#B71C1C;}
 .ped-items{font-size:12px;color:#555;margin-bottom:6px;line-height:1.6;}
 .ped-total{font-size:14px;font-weight:700;color:#111;margin-bottom:10px;}
 .choice-label{font-size:11px;font-weight:700;color:#333;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
@@ -105,19 +109,50 @@ body{background:#f5f5f5;min-height:100vh;}
 .ni svg{width:22px;height:22px;}
 .ni span{font-size:10px;color:#888;}
 .ni.active span{color:#FF6B35;font-weight:700;}
-.install-banner{display:none;position:fixed;bottom:90px;left:0;right:0;margin:0 14px;background:#111;border-radius:14px;padding:14px 16px;z-index:200;align-items:center;gap:12px;max-width:452px;margin:0 auto 90px;}
-.ib-icon{width:40px;height:40px;border-radius:10px;background:#FF6B35;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.ib-text{flex:1;}
-.ib-title{font-size:13px;font-weight:700;color:#fff;}
-.ib-sub{font-size:11px;color:#aaa;margin-top:2px;}
-.ib-btn{background:#FF6B35;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;}
-.ib-close{background:none;border:none;color:#666;font-size:18px;cursor:pointer;flex-shrink:0;}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#111;color:#FF6B35;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;display:none;white-space:nowrap;}
+
+/* ── CHAT DE REPORTES ── */
+.chat-screen{display:none;position:fixed;inset:0;z-index:500;background:#F4F5F7;flex-direction:column;}
+.chat-screen.visible{display:flex;}
+.chat-hdr{background:#0D0D0D;padding:16px 18px;flex-shrink:0;}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:4px;}
+.chat-input-bar{background:#fff;padding:12px 16px;display:flex;gap:10px;align-items:center;border-top:1px solid #E0E0E0;flex-shrink:0;}
+.countdown-chip{background:#FF6B35;color:#fff;border-radius:20px;padding:4px 12px;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;}
+.countdown-chip.urgente{background:#DC2626;}
+.reporte-alert{background:#FEE2E2;border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:flex-start;gap:10px;}
 </style>
 </head>
 <body>
 <div class="app">
 <div class="toast" id="t"></div>
+
+<!-- CHAT DE REPORTE -->
+<div class="chat-screen" id="chat-screen">
+  <div class="chat-hdr">
+    <div style="color:#FF6B35;font-size:13px;font-weight:600;margin-bottom:10px;cursor:pointer;" onclick="cerrarChat()">← Volver a pedidos</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:#fff;" id="chat-titulo">Chat con usuario</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:2px;" id="chat-subtitulo">Reporte de pedido</div>
+      </div>
+      <div id="chat-countdown" class="countdown-chip">10:00</div>
+    </div>
+  </div>
+  <div style="background:#FEF3C7;padding:10px 16px;flex-shrink:0;display:flex;align-items:center;gap:8px;">
+    <span style="font-size:14px;">⚠️</span>
+    <div style="font-size:12px;color:#92400E;font-weight:600;">Tenés que resolver este problema antes de que se acabe el tiempo.</div>
+  </div>
+  <div class="chat-msgs" id="chat-msgs"></div>
+  <div class="chat-input-bar">
+    <input id="chat-resp" placeholder="Escribí tu respuesta al usuario..." 
+      style="flex:1;border:1.5px solid #E0E0E0;border-radius:22px;padding:10px 16px;font-size:13px;outline:none;font-family:inherit;"
+      onkeydown="if(event.key==='Enter')enviarRespuesta()"/>
+    <button onclick="enviarRespuesta()" style="width:40px;height:40px;border-radius:50%;background:#FF6B35;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
 <div class="header">
   <div class="header-logo">
     <svg width="28" height="28" viewBox="0 0 90 90" fill="none">
@@ -139,12 +174,18 @@ body{background:#f5f5f5;min-height:100vh;}
 </div>
 <div class="tabs">
   <div class="tab active" id="tab-p" onclick="stab('p')">Pedidos <span class="badge-n" id="bn" style="display:none">0</span></div>
+  <div class="tab" id="tab-r" onclick="stab('r');cargarReportes()">⚠️ Reportes <span class="badge-r" id="br" style="display:none">0</span></div>
   <div class="tab" id="tab-m" onclick="stab('m')">Menú</div>
   <div class="tab" id="tab-c" onclick="stab('c')">Config</div>
 </div>
 
 <div class="sec active" id="sec-p">
   <div id="pc"><div class="empty"><div class="big">🎉</div><p>Sin pedidos pendientes.</p></div></div>
+</div>
+
+<!-- SECCIÓN DE REPORTES -->
+<div class="sec" id="sec-r">
+  <div id="reportes-list"><div class="empty"><div class="big">✅</div><p>No tenés reportes activos.<br>¡Todo bien con tus pedidos!</p></div></div>
 </div>
 
 <div class="sec" id="sec-m">
@@ -197,24 +238,18 @@ body{background:#f5f5f5;min-height:100vh;}
     <div class="fg"><label class="fl">Pedido mínimo ($)</label><input class="fi" id="cm" type="number" value="0" placeholder="0 = sin mínimo"/></div>
   </div>
   <button class="btn-save" onclick="guardarCfg()">Guardar cambios</button>
-
   <div class="cfg-g" style="margin-top:16px;">
     <div class="cfg-t">MercadoPago</div>
     <div id="mp-status-box" style="background:#f9f9f9;border-radius:12px;padding:14px;margin-bottom:12px;">
       <div id="mp-no-conectado">
         <div style="font-size:13px;font-weight:600;color:#111;margin-bottom:6px;">Conectá tu cuenta de MercadoPago</div>
-        <div style="font-size:12px;color:#888;margin-bottom:12px;line-height:1.6;">Así los pagos de tus clientes llegan directo a tu cuenta. Puerta a Puerta descuenta su comisión automáticamente.</div>
-        <button onclick="conectarMP()" style="width:100%;background:#009EE3;color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;">
-          💳 Conectar MercadoPago
-        </button>
+        <div style="font-size:12px;color:#888;margin-bottom:12px;line-height:1.6;">Así los pagos de tus clientes llegan directo a tu cuenta.</div>
+        <button onclick="conectarMP()" style="width:100%;background:#009EE3;color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;">💳 Conectar MercadoPago</button>
       </div>
       <div id="mp-conectado" style="display:none;">
         <div style="display:flex;align-items:center;gap:10px;">
           <div style="width:36px;height:36px;border-radius:50%;background:#00C853;display:flex;align-items:center;justify-content:center;font-size:18px;">✓</div>
-          <div>
-            <div style="font-size:13px;font-weight:700;color:#111;">MercadoPago conectado</div>
-            <div style="font-size:11px;color:#888;">Los pagos llegan directo a tu cuenta</div>
-          </div>
+          <div><div style="font-size:13px;font-weight:700;color:#111;">MercadoPago conectado</div><div style="font-size:11px;color:#888;">Los pagos llegan directo a tu cuenta</div></div>
         </div>
       </div>
     </div>
@@ -235,25 +270,14 @@ body{background:#f5f5f5;min-height:100vh;}
   </div>
 </div>
 
-<div class="install-banner" id="install-banner">
-  <div class="ib-icon">
-    <svg width="24" height="24" viewBox="0 0 90 90" fill="none">
-      <path d="M10 36 L45 18 L80 36" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-      <rect x="12" y="36" width="30" height="46" rx="4" fill="#fff" opacity=".9"/>
-      <rect x="48" y="36" width="30" height="46" rx="4" fill="#fff"/>
-    </svg>
-  </div>
-  <div class="ib-text">
-    <div class="ib-title">Instalá la app</div>
-    <div class="ib-sub">Recibí pedidos aunque cierres el navegador</div>
-  </div>
-  <button class="ib-btn" id="btn-instalar">Instalar</button>
-  <button class="ib-close" onclick="document.getElementById('install-banner').style.display='none'">✕</button>
-</div>
 <div class="nav">
   <div class="ni active" id="ni-p" onclick="stab('p');aN('ni-p')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
     <span>Pedidos</span>
+  </div>
+  <div class="ni" id="ni-r" onclick="stab('r');cargarReportes();aN('ni-r')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span>Reportes</span>
   </div>
   <div class="ni" id="ni-m" onclick="stab('m');aN('ni-m')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -271,6 +295,7 @@ const SU='https://fmqlpgerqdiplnvjjarl.supabase.co';
 const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtcWxwZ2VycWRpcGxudmpqYXJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MTkwNTYsImV4cCI6MjA5MDQ5NTA1Nn0.r1X4NSX8t-v9EeJQ-eK9DVslIWkpo2_UCn-oRy6k--w';
 const sb=supabase.createClient(SU,SK);
 let cid=null,ab=true,prods=[],peds=[],delDef='hibrido',epid=null,choices={};
+let reporteActivo=null,chatInterval=null;
 
 function toast(m,d=2500){const t=document.getElementById('t');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',d);}
 function stab(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');document.getElementById('sec-'+tab).classList.add('active');}
@@ -279,21 +304,163 @@ function togAb(){ab=!ab;document.getElementById('tdot').className='tdot'+(ab?'':
 function sDel(el,t){document.querySelectorAll('.del-opt').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');delDef=t;}
 function sCad(pid,tipo){choices[pid]=tipo;document.querySelectorAll('.copt-'+pid).forEach(o=>o.classList.remove('sel'));document.getElementById('copt-'+pid+'-'+tipo).classList.add('sel');}
 
+// ── REPORTES ──
+async function cargarReportes() {
+  const cont = document.getElementById('reportes-list');
+  cont.innerHTML = '<div style="text-align:center;padding:30px;color:#888;">Cargando...</div>';
+  try {
+    const {data} = await sb.from('reportes').select('*').eq('comercio_id', cid).eq('estado','pendiente').order('created_at',{ascending:false});
+    const rep = data || [];
+    const br = document.getElementById('br');
+    br.style.display = rep.length ? 'inline-flex' : 'none';
+    br.textContent = rep.length;
+    if (!rep.length) {
+      cont.innerHTML = '<div class="empty"><div class="big">✅</div><p>No tenés reportes activos.<br>¡Todo bien con tus pedidos!</p></div>';
+      return;
+    }
+    const tipoLabel = {'no-llegó':'No llegó lo pedido','mal-estado':'Llegó en mal estado','faltó-algo':'Faltó algo','no-llegó-pedido':'No recibió el pedido'};
+    cont.innerHTML = rep.map(r => {
+      const limite = r.limite_resolucion ? new Date(r.limite_resolucion) : null;
+      const mins = limite ? Math.max(0, Math.round((limite - new Date()) / 60000)) : '?';
+      const vencido = limite && new Date() > limite;
+      return `<div class="ped-card reporte">
+        <div class="ped-head">
+          <div>
+            <div class="ped-num">⚠️ ${tipoLabel[r.tipo]||r.tipo}</div>
+            <div class="ped-time">${new Date(r.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})} hs</div>
+          </div>
+          <span class="ep ep-rep">${vencido?'Vencido':`${mins} min`}</span>
+        </div>
+        ${vencido ? '<div style="background:#FEE2E2;border-radius:8px;padding:8px 12px;font-size:12px;color:#DC2626;margin-bottom:10px;">⏰ Tiempo vencido. El pedido fue anulado y el usuario recibe reembolso. Tu comisión se cobra igual.</div>' : 
+        '<div style="background:#FEF3C7;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400E;margin-bottom:10px;">⏰ Resolvé antes de que se acabe el tiempo o el pedido se anula y pagás igual.</div>'}
+        <div style="display:flex;gap:8px;">
+          <button onclick="abrirChat('${r.id}','${r.tipo}',${JSON.stringify(r.limite_resolucion).replace(/"/g,"'")})" style="flex:1;background:#FF6B35;color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">💬 Abrir chat</button>
+          <button onclick="resolverReporte('${r.id}')" style="flex:1;background:#E8F5E9;color:#2E7D32;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">✅ Resolver</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    cont.innerHTML = '<div class="empty"><div class="big">✅</div><p>No tenés reportes activos.</p></div>';
+  }
+}
+
+async function resolverReporte(id) {
+  try { await sb.from('reportes').update({estado:'resuelto'}).eq('id',id); } catch {}
+  toast('✅ Reporte marcado como resuelto');
+  cargarReportes();
+}
+
+// ── CHAT ──
+async function abrirChat(reporteId, tipo, limiteStr) {
+  reporteActivo = reporteId;
+  const tipoLabel = {'no-llegó':'No llegó lo pedido','mal-estado':'Llegó en mal estado','faltó-algo':'Faltó algo','no-llegó-pedido':'No recibió el pedido'};
+  document.getElementById('chat-titulo').textContent = tipoLabel[tipo]||tipo;
+  document.getElementById('chat-screen').classList.add('visible');
+  await cargarMensajesChat(reporteId);
+  // Cuenta regresiva
+  if (chatInterval) clearInterval(chatInterval);
+  if (limiteStr && limiteStr !== 'null') {
+    const limite = new Date(limiteStr);
+    chatInterval = setInterval(() => {
+      const restante = Math.max(0, limite - new Date());
+      const min = Math.floor(restante/60000).toString().padStart(2,'0');
+      const seg = Math.floor((restante%60000)/1000).toString().padStart(2,'0');
+      const chip = document.getElementById('chat-countdown');
+      if (chip) {
+        chip.textContent = `${min}:${seg}`;
+        chip.className = 'countdown-chip' + (restante < 120000 ? ' urgente' : '');
+      }
+      if (restante <= 0) clearInterval(chatInterval);
+    }, 1000);
+  }
+  // Escuchar mensajes nuevos en tiempo real
+  sb.channel('chat-'+reporteId)
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_reportes', filter:`pedido_id=eq.${reporteId}` }, () => {
+      cargarMensajesChat(reporteId);
+    }).subscribe();
+}
+
+async function cargarMensajesChat(reporteId) {
+  try {
+    const {data} = await sb.from('chat_reportes').select('*').order('created_at',{ascending:true});
+    const msgs = data || [];
+    const cont = document.getElementById('chat-msgs');
+    if (!cont) return;
+    if (!msgs.length) {
+      cont.innerHTML = '<div style="text-align:center;color:#9DA3AE;font-size:13px;padding:20px;">El usuario va a escribir acá. Respondé rápido 👇</div>';
+      return;
+    }
+    cont.innerHTML = msgs.map(m => {
+      const hora = new Date(m.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+      if (m.de === 'sistema') return `<div style="text-align:center;margin:8px 0;"><span style="background:#E0E0E0;color:#5C6270;font-size:11px;padding:4px 12px;border-radius:20px;">${m.texto}</span></div>`;
+      if (m.de === 'comercio') return `<div style="display:flex;justify-content:flex-end;margin:4px 0;"><div style="max-width:75%;background:#FF6B35;color:#fff;border-radius:16px 16px 4px 16px;padding:10px 14px;font-size:13px;line-height:1.4;">${m.texto}<div style="font-size:10px;opacity:.7;margin-top:4px;text-align:right;">${hora}</div></div></div>`;
+      return `<div style="display:flex;justify-content:flex-start;margin:4px 0;"><div style="max-width:75%;background:#fff;color:#0D0D0D;border-radius:16px 16px 16px 4px;padding:10px 14px;font-size:13px;line-height:1.4;box-shadow:0 1px 4px rgba(0,0,0,.08);"><div style="font-size:10px;color:#9DA3AE;font-weight:700;margin-bottom:4px;">👤 Usuario</div>${m.texto}<div style="font-size:10px;color:#9DA3AE;margin-top:4px;">${hora}</div></div></div>`;
+    }).join('');
+    cont.scrollTop = cont.scrollHeight;
+  } catch {}
+}
+
+async function enviarRespuesta() {
+  const input = document.getElementById('chat-resp');
+  if (!input || !input.value.trim()) return;
+  const texto = input.value.trim();
+  input.value = '';
+  const hora = new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  // Agregar mensaje visualmente
+  const cont = document.getElementById('chat-msgs');
+  if (cont) {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;justify-content:flex-end;margin:4px 0;';
+    div.innerHTML = `<div style="max-width:75%;background:#FF6B35;color:#fff;border-radius:16px 16px 4px 16px;padding:10px 14px;font-size:13px;line-height:1.4;">${texto}<div style="font-size:10px;opacity:.7;margin-top:4px;text-align:right;">${hora}</div></div>`;
+    cont.appendChild(div);
+    cont.scrollTop = cont.scrollHeight;
+  }
+  // Guardar en Supabase
+  try {
+    await sb.from('chat_reportes').insert([{
+      pedido_id: reporteActivo,
+      de: 'comercio',
+      texto,
+    }]);
+  } catch {}
+}
+
+function cerrarChat() {
+  document.getElementById('chat-screen').classList.remove('visible');
+  if (chatInterval) clearInterval(chatInterval);
+  reporteActivo = null;
+}
+
 async function init(){
   try{const{data}=await sb.from('comercios').select('*').limit(1).single();
     if(data){cid=data.id;document.getElementById('cnombre').textContent=data.nombre;setTimeout(checkMPConectado,1000);document.getElementById('cn').value=data.nombre||'';document.getElementById('cc').value=data.categoria||'comida';document.getElementById('cd').value=data.direccion||'';document.getElementById('ct').value=data.telefono||'';document.getElementById('ce').value=data.precio_envio_propio||800;document.getElementById('cr').value=data.radio_entrega_km||3;document.getElementById('s-rat').textContent=data.rating||'5.0';ab=data.abierto_ahora!==false;document.getElementById('tdot').className='tdot'+(ab?'':' off');document.getElementById('tlbl').textContent=ab?'Abierto':'Cerrado';}}catch{}
   await cargarProds();await cargarPeds();
+  // Verificar reportes pendientes
+  verificarReportesPendientes();
+}
+
+async function verificarReportesPendientes() {
+  try {
+    const {data} = await sb.from('reportes').select('id').eq('comercio_id',cid).eq('estado','pendiente');
+    const n = data?.length || 0;
+    const br = document.getElementById('br');
+    if (n > 0) {
+      br.style.display = 'inline-flex';
+      br.textContent = n;
+      toast(`⚠️ Tenés ${n} reporte${n>1?'s':''} pendiente${n>1?'s':''}. ¡Respondé rápido!`, 5000);
+    }
+  } catch {}
 }
 
 async function cargarProds(){
   try{const{data}=await sb.from('productos').select('*').eq('comercio_id',cid).order('categoria');prods=data||[];}
-  catch{prods=[{id:'1',nombre:'Pizza Muzarella',descripcion:'Salsa, queso, orégano',precio:2500,categoria:'Pizzas',disponible:true},{id:'2',nombre:'Empanadas carne x6',descripcion:'Cortada a cuchillo',precio:1800,categoria:'Empanadas',disponible:true}];}
+  catch{prods=[{id:'1',nombre:'Pizza Muzarella',descripcion:'Salsa, queso, orégano',precio:2500,categoria:'Pizzas',disponible:true}];}
   renderProds();
 }
 
 async function cargarPeds(){
   try{const{data}=await sb.from('pedidos').select('*').eq('comercio_id',cid).order('created_at',{ascending:false}).limit(20);peds=data||[];}
-  catch{peds=[{id:'p1',numero:1043,estado:'nuevo',items:[{nombre:'Pizza Muzarella',qty:1,precio:2500},{nombre:'Coca Cola',qty:2,precio:800}],total:5700,created_at:new Date().toISOString()},{id:'p2',numero:1042,estado:'preparando',items:[{nombre:'Empanadas x6',qty:2,precio:1800}],total:4400,created_at:new Date(Date.now()-600000).toISOString(),tipo_delivery:'propio'}];}
+  catch{peds=[{id:'p1',numero:1043,estado:'nuevo',items:[{nombre:'Pizza Muzarella',qty:1,precio:2500}],total:5700,created_at:new Date().toISOString()}];}
   renderPeds();stats();
 }
 
@@ -309,11 +476,9 @@ function renderPeds(){
     const ch=choices[p.id]||'propio';
     let cadSec='';
     if(p.estado==='nuevo'){cadSec=`<div style="margin-bottom:12px;"><div class="choice-label">¿Quién hace el delivery?</div><div class="choice-opts"><div class="c-opt copt-${p.id} ${ch==='propio'?'sel':''}" id="copt-${p.id}-propio" onclick="sCad('${p.id}','propio')"><div class="co-icon">🏍️</div><div class="co-lbl">Mi cadete</div><div class="co-sub">Vos coordinás</div></div><div class="c-opt copt-${p.id} ${ch==='app'?'sel':''}" id="copt-${p.id}-app" onclick="sCad('${p.id}','app')"><div class="co-icon">📱</div><div class="co-lbl">Red P a P</div><div class="co-sub">App asigna uno</div></div></div></div>`;}
-    else if(p.estado==='preparando'&&p.tipo_delivery==='app'){cadSec=`<div class="cad-box"><div class="cad-av">MG</div><div><div class="cad-name">Miguel González</div><div class="cad-sub">Cadete asignado · En camino</div></div><button class="cad-call">Llamar</button></div>`;}
-    else if(p.estado==='preparando'&&p.tipo_delivery==='propio'){cadSec=`<div style="background:#FFF3E0;border-radius:10px;padding:8px 12px;font-size:12px;color:#E65100;margin-bottom:8px;">🏍️ Usando tu cadete propio</div>`;}
     let acts='';
     if(p.estado==='nuevo'){
-      const waMsg = encodeURIComponent(`🛵 *Puerta a Puerta*\n📦 Pedido #${p.numero||'—'}\n🏪 ${p.comercios?.nombre||'Tu comercio'}\n\n${(Array.isArray(p.items)?p.items:[]).map(i=>`• ${i.qty||1}x ${i.nombre} — $${Number(i.precio||0).toLocaleString('es-AR')}`).join('\n')}\n\n💰 Total: $${Number(p.total||0).toLocaleString('es-AR')}\n⏰ ${new Date(p.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})} hs`);
+      const waMsg=encodeURIComponent(`🛵 *Puerta a Puerta*\n📦 Pedido #${p.numero||'—'}\n\n${(Array.isArray(p.items)?p.items:[]).map(i=>`• ${i.qty||1}x ${i.nombre}`).join('\n')}\n\n💰 Total: $${Number(p.total||0).toLocaleString('es-AR')}`);
       acts=`<button class="btn btn-o" onclick="acept('${p.id}')">Aceptar</button><button class="btn btn-r" onclick="chEst('${p.id}','cancelado')">Rechazar</button><a href="https://wa.me/?text=${waMsg}" target="_blank" class="btn" style="background:#25D366;color:#fff;text-decoration:none;display:flex;align-items:center;justify-content:center;">📲 WA</a>`;
     }
     else if(p.estado==='preparando')acts=`<button class="btn-full btn-o" onclick="chEst('${p.id}','en_camino')">Listo para enviar</button>`;
@@ -323,11 +488,9 @@ function renderPeds(){
 }
 
 async function acept(id){
-  const ch=choices[id]||'propio';
-  const p=peds.find(x=>x.id===id);if(p){p.estado='preparando';p.tipo_delivery=ch;}
+  const ch=choices[id]||'propio';const p=peds.find(x=>x.id===id);if(p){p.estado='preparando';p.tipo_delivery=ch;}
   try{await sb.from('pedidos').update({estado:'preparando',tipo_delivery:ch}).eq('id',id);}catch{}
-  renderPeds();
-  toast(ch==='app'?'✅ Pedido aceptado · Buscando cadete de la red...':'✅ Pedido aceptado · Coordiná con tu cadete');
+  renderPeds();toast(ch==='app'?'✅ Pedido aceptado · Buscando cadete...':'✅ Pedido aceptado');
 }
 
 async function chEst(id,est){
@@ -352,7 +515,7 @@ function stats(){
   document.getElementById('s-sem').textContent=tot>0?`$${Math.round(tot/1000)}K`:'$0';
 }
 
-function abrirF(p=null){epid=p?p.id:null;document.getElementById('ft').textContent=p?'Editar producto':'Agregar producto';document.getElementById('pn').value=p?p.nombre:'';document.getElementById('pd').value=p?(p.descripcion||''):'';document.getElementById('pp').value=p?p.precio:'';document.getElementById('pcat').value=p?(p.categoria||''):'';document.getElementById('ov').classList.add('show');}
+function abrirF(){epid=null;document.getElementById('ft').textContent='Agregar producto';document.getElementById('pn').value='';document.getElementById('pd').value='';document.getElementById('pp').value='';document.getElementById('pcat').value='';document.getElementById('ov').classList.add('show');}
 function cerrarF(){document.getElementById('ov').classList.remove('show');}
 
 async function guardarProd(){
@@ -370,129 +533,30 @@ async function guardarCfg(){
   toast('✅ Configuración guardada');
 }
 
+function conectarMP(){const CLIENT_ID='3886989011728021';const REDIRECT_URI=encodeURIComponent('https://puertaapuerta.vercel.app/oauth-callback.html');const STATE=cid||'comercio';const url=`https://auth.mercadopago.com.ar/authorization?client_id=${CLIENT_ID}&response_type=code&platform_id=mp&redirect_uri=${REDIRECT_URI}&state=${STATE}`;window.location.href=url;}
+async function checkMPConectado(){if(!cid)return;try{const{data}=await sb.from('comercios').select('mp_conectado').eq('id',cid).single();if(data?.mp_conectado){document.getElementById('mp-no-conectado').style.display='none';document.getElementById('mp-conectado').style.display='flex';}}catch{}}
+
 setInterval(cargarPeds,30000);
+setInterval(verificarReportesPendientes,60000);
 
-// PROTECCIÓN — verificar sesión activa
-sb.auth.getSession().then(({data:{session}}) => {
-  if(!session) {
-    window.location.href = '/login.html';
-  } else {
-    init();
-  }
-});
-
-function conectarMP(){
-  const CLIENT_ID = '3886989011728021';
-  const REDIRECT_URI = encodeURIComponent('https://puertaapuerta.vercel.app/oauth-callback.html');
-  const STATE = cid || 'comercio';
-  const url = `https://auth.mercadopago.com.ar/authorization?client_id=${CLIENT_ID}&response_type=code&platform_id=mp&redirect_uri=${REDIRECT_URI}&state=${STATE}`;
-  window.location.href = url;
-}
-
-async function checkMPConectado(){
-  if(!cid) return;
-  try {
-    const {data} = await sb.from('comercios').select('mp_conectado').eq('id',cid).single();
-    if(data?.mp_conectado){
-      document.getElementById('mp-no-conectado').style.display='none';
-      document.getElementById('mp-conectado').style.display='flex';
-    }
-  } catch {}
-}
-
-// PWA — Registrar Service Worker
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('/sw.js').then(reg => {
-    console.log('SW registrado');
-  }).catch(err => console.log('SW error:', err));
-}
-
-// PWA — Botón de instalación
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  // Mostrar banner de instalación
-  const banner = document.getElementById('install-banner');
-  banner.style.display = 'flex';
-});
-
-document.getElementById('btn-instalar')?.addEventListener('click', async () => {
-  if(!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  document.getElementById('install-banner').style.display = 'none';
-  if(outcome === 'accepted') toast('✅ App instalada correctamente');
-});
-
-window.addEventListener('appinstalled', () => {
-  toast('✅ ¡App instalada! Ya podés cerrar el navegador');
-});
-
-// REALTIME — escuchar pedidos nuevos en tiempo real
+// Realtime — pedidos nuevos
 function iniciarRealtime(){
-  try {
-    sb.channel('pedidos-nuevos')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'pedidos'
-      }, (payload) => {
-        // Nuevo pedido llegó
-        sonarNotificacion();
-        toast('🔔 ¡Nuevo pedido recibido!', 4000);
-        cargarPeds();
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'pedidos'
-      }, (payload) => {
-        cargarPeds();
-      })
-      .subscribe();
-  } catch(e) {
-    console.log('Realtime no disponible:', e);
-  }
+  try{sb.channel('pedidos-nuevos').on('postgres_changes',{event:'INSERT',schema:'public',table:'pedidos'},()=>{sonarNotificacion();toast('🔔 ¡Nuevo pedido!',4000);cargarPeds();}).on('postgres_changes',{event:'UPDATE',schema:'public',table:'pedidos'},()=>{cargarPeds();}).subscribe();
+  // Escuchar reportes nuevos
+  sb.channel('reportes-nuevos').on('postgres_changes',{event:'INSERT',schema:'public',table:'reportes'},()=>{sonarNotificacion();toast('⚠️ ¡Nuevo reporte de un usuario!',5000);verificarReportesPendientes();}).subscribe();}catch{}
 }
 
-function sonarNotificacion(){
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    // Sonido de notificación
-    [523, 659, 784].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = 'sine';
-      gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.15 + 0.2);
-      osc.start(ctx.currentTime + i * 0.15);
-      osc.stop(ctx.currentTime + i * 0.15 + 0.2);
-    });
-  } catch(e) {}
-}
+function sonarNotificacion(){try{const ctx=new(window.AudioContext||window.webkitAudioContext)();[523,659,784].forEach((freq,i)=>{const osc=ctx.createOscillator();const gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.frequency.value=freq;osc.type='sine';gain.gain.setValueAtTime(0.3,ctx.currentTime+i*.15);gain.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+i*.15+.2);osc.start(ctx.currentTime+i*.15);osc.stop(ctx.currentTime+i*.15+.2);});}catch{}}
 
-// Notificaciones del navegador
-function pedirPermisoNotificaciones(){
-  if('Notification' in window && Notification.permission === 'default'){
-    Notification.requestPermission();
-  }
-}
+sb.auth.getSession().then(({data:{session}})=>{
+  if(!session){window.location.href='/login.html';}
+  else{init();}
+});
 
-function mostrarNotificacionNavegador(titulo, cuerpo){
-  if('Notification' in window && Notification.permission === 'granted'){
-    new Notification(titulo, {
-      body: cuerpo,
-      icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="%23FF6B35"/></svg>'
-    });
-  }
-}
-
-pedirPermisoNotificaciones();
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();deferredPrompt=e;});
+if('Notification' in window&&Notification.permission==='default'){Notification.requestPermission();}
 iniciarRealtime();
 </script>
 </body>
