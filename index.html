@@ -441,6 +441,15 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
           <div style="width:7px;height:7px;border-radius:50%;background:#fff;"></div>
         </div>
       </div>
+
+      <!-- MAPA INTERACTIVO -->
+      <div id="mapa-wrap" style="border-radius:14px;overflow:hidden;position:relative;height:180px;background:#e8e8e8;display:none;">
+        <div id="mapa-carrito" style="width:100%;height:100%;"></div>
+        <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);color:#fff;font-size:10px;font-weight:600;padding:4px 12px;border-radius:20px;white-space:nowrap;pointer-events:none;">
+          Arrastrá el pin para ajustar
+        </div>
+      </div>
+
       <div id="dir-opt-otras" style="display:flex;flex-direction:column;gap:8px;"></div>
       <div id="dir-opt-nueva" onclick="selDireccion('nueva')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1.5px solid #E0E0E0;background:#fff;cursor:pointer;">
         <span style="font-size:20px;">✏️</span>
@@ -719,6 +728,72 @@ function filtrar(el, cat) {
   el.classList.add('active');
   if (cat === 'todos') { renderRubros(); return; }
   abrirRubro(cat, RUBROS.find(r=>r.id===cat)?.label || cat);
+}
+
+// ── MAPA DEL CARRITO (seguro) ──
+let _mapaListo = false;
+let _mapaObj = null;
+let _pinObj = null;
+
+function cargarMapaCarrito(lat, lng) {
+  const wrap = document.getElementById('mapa-wrap');
+  const div = document.getElementById('mapa-carrito');
+  if (!wrap || !div) return;
+  wrap.style.display = 'block';
+
+  if (!window.google || !window.google.maps) {
+    // Cargar Google Maps solo si no está cargado
+    const s = document.createElement('script');
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyASBhagsg9KOoRLRaXmI8BEw9VMvf3dQo0&language=es';
+    s.async = true;
+    s.onload = () => crearMapa(lat, lng);
+    s.onerror = () => { wrap.style.display = 'none'; };
+    document.head.appendChild(s);
+  } else {
+    crearMapa(lat, lng);
+  }
+}
+
+function crearMapa(lat, lng) {
+  try {
+    const div = document.getElementById('mapa-carrito');
+    if (!div || _mapaListo) {
+      // Ya existe — solo mover el pin
+      if (_mapaObj && _pinObj) {
+        const pos = { lat, lng };
+        _mapaObj.setCenter(pos);
+        _pinObj.setPosition(pos);
+      }
+      return;
+    }
+    _mapaListo = true;
+    _mapaObj = new google.maps.Map(div, {
+      center: { lat, lng },
+      zoom: 17,
+      disableDefaultUI: true,
+      zoomControl: true,
+    });
+    _pinObj = new google.maps.Marker({
+      position: { lat, lng },
+      map: _mapaObj,
+      draggable: true,
+      icon: {
+        url: 'https://maps.google.com/mapfiles/ms/icons/orange-dot.png',
+        scaledSize: new google.maps.Size(36, 36),
+        anchor: new google.maps.Point(18, 36),
+      }
+    });
+    _pinObj.addListener('dragend', async () => {
+      const p = _pinObj.getPosition();
+      const dir = await obtenerDireccionDesdePin(p.lat(), p.lng());
+      const gpsTxt = document.getElementById('dir-gps-txt');
+      if (gpsTxt) gpsTxt.textContent = dir;
+      ubicacionActual = dir;
+      selDireccion('gps');
+    });
+  } catch(e) {
+    document.getElementById('mapa-wrap').style.display = 'none';
+  }
 }
 
 // ── AUTOCOMPLETADO DE DIRECCIÓN (sin widget, sin bugs) ──
@@ -1089,12 +1164,16 @@ function getDireccionEntrega() {
 async function actualizarDirGPS() {
   if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(async (pos) => {
-    const dir = await obtenerDireccionDesdePin(pos.coords.latitude, pos.coords.longitude);
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    const dir = await obtenerDireccionDesdePin(lat, lng);
     const gpsTxt = document.getElementById('dir-gps-txt');
     if (gpsTxt) gpsTxt.textContent = dir;
     ubicacionActual = dir;
     localStorage.setItem('pap_ubicacion', dir);
-  }, () => {}, { enableHighAccuracy: true });
+    // Cargar mapa con la ubicación real
+    cargarMapaCarrito(lat, lng);
+  }, () => {}, { enableHighAccuracy: true, maximumAge: 0 });
 }
 
 function renderCarrito() {
