@@ -307,40 +307,73 @@ function sCad(pid,tipo){choices[pid]=tipo;document.querySelectorAll('.copt-'+pid
 // ── REPORTES ──
 async function cargarReportes() {
   const cont = document.getElementById('reportes-list');
-  cont.innerHTML = '<div style="text-align:center;padding:30px;color:#888;">Cargando...</div>';
+  cont.innerHTML = '<div style="text-align:center;padding:30px;color:#888;font-size:13px;">Cargando...</div>';
   try {
     const {data} = await sb.from('reportes').select('*').eq('comercio_id', cid).eq('estado','pendiente').order('created_at',{ascending:false});
     const rep = data || [];
     const br = document.getElementById('br');
     br.style.display = rep.length ? 'inline-flex' : 'none';
     br.textContent = rep.length;
+
     if (!rep.length) {
-      cont.innerHTML = '<div class="empty"><div class="big">✅</div><p>No tenés reportes activos.<br>¡Todo bien con tus pedidos!</p></div>';
+      cont.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;padding:48px 24px;text-align:center;">
+          <div style="width:80px;height:80px;border-radius:50%;background:#E8F5E9;display:flex;align-items:center;justify-content:center;font-size:38px;margin-bottom:20px;">✅</div>
+          <div style="font-size:18px;font-weight:800;color:#111;margin-bottom:8px;">Todo en orden</div>
+          <div style="font-size:14px;color:#888;line-height:1.6;">No tenés reportes pendientes.<br>Tus clientes están conformes.</div>
+          <div style="margin-top:28px;width:100%;background:#F9F9F9;border-radius:14px;padding:16px;">
+            <div style="font-size:12px;font-weight:700;color:#333;margin-bottom:12px;text-align:left;">📋 Reglas del comercio</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              ${['Las fotos deben representar el producto real','Los precios no pueden tener cargos ocultos','Aceptá solo pedidos que puedas cumplir','3 reportes confirmados = suspensión automática'].map(r=>`
+                <div style="display:flex;align-items:center;gap:10px;text-align:left;">
+                  <span style="font-size:14px;flex-shrink:0;">•</span>
+                  <span style="font-size:12px;color:#555;line-height:1.5;">${r}</span>
+                </div>`).join('')}
+            </div>
+          </div>
+        </div>`;
       return;
     }
+
     const tipoLabel = {'no-llegó':'No llegó lo pedido','mal-estado':'Llegó en mal estado','faltó-algo':'Faltó algo','no-llegó-pedido':'No recibió el pedido'};
-    cont.innerHTML = rep.map(r => {
-      const limite = r.limite_resolucion ? new Date(r.limite_resolucion) : null;
-      const mins = limite ? Math.max(0, Math.round((limite - new Date()) / 60000)) : '?';
-      const vencido = limite && new Date() > limite;
-      return `<div class="ped-card reporte">
-        <div class="ped-head">
-          <div>
-            <div class="ped-num">⚠️ ${tipoLabel[r.tipo]||r.tipo}</div>
-            <div class="ped-time">${new Date(r.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})} hs</div>
-          </div>
-          <span class="ep ep-rep">${vencido?'Vencido':`${mins} min`}</span>
-        </div>
-        ${vencido ? '<div style="background:#FEE2E2;border-radius:8px;padding:8px 12px;font-size:12px;color:#DC2626;margin-bottom:10px;">⏰ Tiempo vencido. El pedido fue anulado y el usuario recibe reembolso. Tu comisión se cobra igual.</div>' : 
-        '<div style="background:#FEF3C7;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400E;margin-bottom:10px;">⏰ Resolvé antes de que se acabe el tiempo o el pedido se anula y pagás igual.</div>'}
-        <div style="display:flex;gap:8px;">
-          <button onclick="abrirChat('${r.id}','${r.tipo}',${JSON.stringify(r.limite_resolucion).replace(/"/g,"'")})" style="flex:1;background:#FF6B35;color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">💬 Abrir chat</button>
-          <button onclick="resolverReporte('${r.id}')" style="flex:1;background:#E8F5E9;color:#2E7D32;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">✅ Resolver</button>
-        </div>
-      </div>`;
-    }).join('');
+    cont.innerHTML = `
+      <div style="background:#FEF3C7;border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:center;">
+        <span style="font-size:20px;">⚠️</span>
+        <div style="font-size:13px;color:#92400E;font-weight:600;">Tenés ${rep.length} reporte${rep.length>1?'s':''} pendiente${rep.length>1?'s':''}. Respondé antes de que venza el tiempo.</div>
+      </div>
+      ${rep.map(r => {
+        const limite = r.limite_resolucion ? new Date(r.limite_resolucion) : null;
+        const restante = limite ? Math.max(0, limite - new Date()) : 0;
+        const mins = Math.floor(restante/60000);
+        const vencido = limite && new Date() > limite;
+        const color = vencido ? '#DC2626' : mins <= 2 ? '#DC2626' : '#FF6B35';
+        return `
+          <div style="background:#fff;border:1.5px solid ${vencido?'#FCA5A5':'#FECACA'};border-radius:14px;padding:14px;margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <div>
+                <div style="font-size:14px;font-weight:700;color:#111;">⚠️ ${tipoLabel[r.tipo]||r.tipo}</div>
+                <div style="font-size:11px;color:#888;margin-top:2px;">${new Date(r.created_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})} hs</div>
+              </div>
+              <div style="background:${vencido?'#FEE2E2':'#FFF8F6'};border-radius:20px;padding:5px 12px;font-size:13px;font-weight:700;color:${color};">
+                ${vencido?'Vencido':`${mins} min`}
+              </div>
+            </div>
+            ${vencido ? 
+              '<div style="background:#FEE2E2;border-radius:8px;padding:8px 12px;font-size:12px;color:#DC2626;margin-bottom:10px;">⏰ Tiempo vencido. El usuario recibe reembolso y tu comisión se cobra igual.</div>' : 
+              '<div style="background:#FEF3C7;border-radius:8px;padding:8px 12px;font-size:12px;color:#92400E;margin-bottom:10px;">Hablá con el usuario y resolvé el problema antes de que venza el tiempo.</div>'
+            }
+            <div style="display:flex;gap:8px;">
+              <button onclick="abrirChat('${r.id}','${r.tipo}','${r.limite_resolucion||''}')" style="flex:1;background:#FF6B35;color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;">💬 Abrir chat</button>
+              <button onclick="resolverReporte('${r.id}')" style="flex:1;background:#E8F5E9;color:#2E7D32;border:1.5px solid #A7F3D0;border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;">✅ Resolver</button>
+            </div>
+          </div>`;
+      }).join('')}`;
   } catch(e) {
-    cont.innerHTML = '<div class="empty"><div class="big">✅</div><p>No tenés reportes activos.</p></div>';
+    cont.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;padding:48px 24px;text-align:center;">
+        <div style="font-size:38px;margin-bottom:16px;">✅</div>
+        <div style="font-size:16px;font-weight:700;color:#111;">No tenés reportes activos</div>
+      </div>`;
   }
 }
 
