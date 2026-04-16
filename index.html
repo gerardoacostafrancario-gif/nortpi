@@ -615,6 +615,17 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
   <div style="height:20px;"></div>
 </div>
 
+<!-- SOPORTE -->
+<div class="screen" id="s-soporte">
+  <div style="background:var(--black);padding:18px 18px 20px;">
+    <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:4px;">💬 Soporte</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.5);">Tus reportes y chats activos</div>
+  </div>
+  <div id="soporte-list" style="padding:16px;">
+    <div style="text-align:center;padding:30px;color:var(--gray-400);">Cargando...</div>
+  </div>
+</div>
+
 <!-- PEDIDOS -->
 <div class="screen" id="s-pedidos">
   <div class="detail-hdr"><div class="det-name" style="padding-top:4px;">Mis pedidos</div></div>
@@ -670,6 +681,11 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57l1.65-8.42H6"/></svg>
     <span>Carrito</span>
   </div>
+  <div class="nav-i" id="nav-soporte" onclick="go('soporte');cargarChatsReporte();" style="position:relative;">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    <span>Soporte</span>
+    <div id="nav-soporte-badge" style="display:none;position:absolute;top:0;right:8px;width:8px;height:8px;border-radius:50%;background:#DC2626;"></div>
+  </div>
   <div class="nav-i" id="nav-perfil" onclick="go('perfil')">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
     <span>Perfil</span>
@@ -695,7 +711,7 @@ function go(screen) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('s-' + screen).classList.add('active');
   document.querySelectorAll('.nav-i').forEach(n => n.classList.remove('active'));
-  const navMap = {home:'nav-home',pedidos:'nav-pedidos',carrito:'nav-carrito',perfil:'nav-perfil'};
+  const navMap = {home:'nav-home',pedidos:'nav-pedidos',carrito:'nav-carrito',perfil:'nav-perfil',soporte:'nav-soporte','chat-reporte':'nav-soporte'};
   if (navMap[screen]) document.getElementById(navMap[screen]).classList.add('active');
   currentScreen = screen;
   if (screen === 'carrito') { renderCarrito(); cargarDireccionesEnCarrito(); actualizarDirGPS(); }
@@ -995,6 +1011,60 @@ async function reportarProblema(tipo) {
   } catch(e) {}
 
   abrirChatReporte(reporteId, tipoLabel, limite);
+}
+
+// ── SOPORTE / CHATS DE REPORTES ──
+async function cargarChatsReporte() {
+  const cont = document.getElementById('soporte-list');
+  if (!cont) return;
+  try {
+    const { data } = await sb.from('reportes').select('*').order('created_at', { ascending: false }).limit(10);
+    const rep = data || [];
+
+    // Mostrar badge si hay reportes pendientes
+    const pendientes = rep.filter(r => r.estado === 'pendiente');
+    const badge = document.getElementById('nav-soporte-badge');
+    if (badge) badge.style.display = pendientes.length ? 'block' : 'none';
+
+    if (!rep.length) {
+      cont.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;padding:48px 24px;text-align:center;">
+          <div style="font-size:48px;margin-bottom:16px;">✅</div>
+          <div style="font-size:17px;font-weight:800;color:var(--black);margin-bottom:8px;">Sin reportes activos</div>
+          <div style="font-size:13px;color:var(--gray-400);line-height:1.6;">Cuando tengas un problema con un pedido, aparecerá acá para que puedas chatear con el comercio.</div>
+        </div>`;
+      return;
+    }
+
+    const tipoLabel = {'no-llegó':'No llegó lo que pedí','mal-estado':'Llegó en mal estado','faltó-algo':'Faltó algo en el pedido','no-llegó-pedido':'No recibí el pedido'};
+    const estadoColor = {'pendiente':'#FF6B35','resuelto':'#16A34A','vencido':'#DC2626'};
+    const estadoLabel = {'pendiente':'Pendiente','resuelto':'Resuelto','vencido':'Vencido'};
+
+    cont.innerHTML = rep.map(r => {
+      const limite = r.limite_resolucion ? new Date(r.limite_resolucion) : null;
+      const vencido = limite && new Date() > limite && r.estado === 'pendiente';
+      const estado = vencido ? 'vencido' : r.estado;
+      const fecha = new Date(r.created_at).toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit'});
+      const hora = new Date(r.created_at).toLocaleTimeString('es-AR', {hour:'2-digit',minute:'2-digit'});
+      return `
+        <div onclick="reabrirChat('${r.id}','${r.tipo}','${r.limite_resolucion||''}')"
+          style="background:#fff;border-radius:14px;padding:14px;margin-bottom:10px;border:1px solid ${r.estado==='pendiente'?'#FECACA':'#E0E0E0'};cursor:pointer;display:flex;align-items:center;gap:12px;">
+          <div style="width:44px;height:44px;border-radius:50%;background:${r.estado==='pendiente'?'#FEE2E2':'#F0F0F0'};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">
+            ${r.estado==='pendiente'?'⚠️':'✅'}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:700;color:var(--black);">${tipoLabel[r.tipo]||r.tipo}</div>
+            <div style="font-size:11px;color:var(--gray-400);margin-top:3px;">${fecha} a las ${hora}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:${estadoColor[estado]}20;color:${estadoColor[estado]};">${estadoLabel[estado]||estado}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9DA3AE" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>`;
+    }).join('');
+  } catch {
+    cont.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gray-400);">No hay reportes.</div>';
+  }
 }
 
 // ── CHAT REPORTE USUARIO ──
