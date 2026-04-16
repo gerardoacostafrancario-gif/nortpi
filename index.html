@@ -602,16 +602,17 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
       <div><div class="tstep-lbl" id="lbl4" style="color:var(--gray-400);">Entregado</div><div class="tstep-time" id="t4"></div></div>
     </div>
   </div>
-  <div id="btn-devolucion-wrap" style="display:none;padding:16px 18px;">
-    <button onclick="abrirDevolucion()" style="width:100%;background:linear-gradient(135deg,#DC2626,#EF4444);color:#fff;border:none;border-radius:14px;padding:16px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(220,38,38,.35);animation:pulseRed 2s infinite;display:flex;align-items:center;justify-content:center;gap:10px;">
-      <span style="font-size:20px;">⚠️</span>
+  <div id="btn-devolucion-wrap" style="display:none;padding:14px 18px 4px;">
+    <button onclick="abrirDevolucion()" style="width:100%;background:linear-gradient(135deg,#DC2626,#EF4444);color:#fff;border:none;border-radius:14px;padding:14px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 15px rgba(220,38,38,.35);animation:pulseRed 2s infinite;display:flex;align-items:center;justify-content:center;gap:10px;">
+      <span style="font-size:18px;">⚠️</span>
       <div style="text-align:left;">
         <div>¿Tuviste un problema con tu pedido?</div>
-        <div style="font-size:11px;opacity:.85;margin-top:2px;">Tocá acá para reportarlo — lo resolvemos en 10 min</div>
+        <div style="font-size:11px;opacity:.85;margin-top:2px;">Tocá acá — lo resolvemos en 10 min</div>
       </div>
-      <span style="font-size:18px;margin-left:auto;">›</span>
+      <span style="font-size:16px;margin-left:auto;">›</span>
     </button>
   </div>
+  <div style="height:20px;"></div>
 </div>
 
 <!-- PEDIDOS -->
@@ -1008,11 +1009,29 @@ async function abrirChatReporte(reporteId, tipoLabel, limiteStr) {
   // Cargar mensajes existentes
   await cargarMsgsChatReporte();
 
-  // Cuenta regresiva
+  // Polling cada 3 segundos para mayor velocidad
   if (chatReporteInterval) clearInterval(chatReporteInterval);
+  let lastCount = 0;
+  chatReporteInterval = setInterval(async () => {
+    try {
+      const { data } = await sb.from('chat_reportes').select('*').order('created_at', { ascending: true });
+      if (data && data.length > lastCount) {
+        lastCount = data.length;
+        const cont = document.getElementById('chat-reporte-msgs');
+        if (!cont) return;
+        cont.innerHTML = '';
+        data.forEach(m => {
+          if (m.de === 'sistema') agregarMsgSistema(m.texto);
+          else agregarBurbuja(m.de, m.texto, m.created_at);
+        });
+      }
+    } catch {}
+  }, 3000);
+
+  // Cuenta regresiva
   if (limiteStr) {
     const limite = new Date(limiteStr);
-    chatReporteInterval = setInterval(() => {
+    const countInterval = setInterval(() => {
       const restante = Math.max(0, limite - new Date());
       const min = Math.floor(restante/60000).toString().padStart(2,'0');
       const seg = Math.floor((restante%60000)/1000).toString().padStart(2,'0');
@@ -1022,13 +1041,13 @@ async function abrirChatReporte(reporteId, tipoLabel, limiteStr) {
         el.style.color = restante < 120000 ? '#DC2626' : '#FF6B35';
       }
       if (restante <= 0) {
-        clearInterval(chatReporteInterval);
+        clearInterval(countInterval);
         agregarMsgSistema('⏰ Tiempo vencido. Tu pedido fue anulado y recibís el reembolso.');
       }
     }, 1000);
   }
 
-  // Suscripción Realtime
+  // Realtime como respaldo
   if (chatReporteChannel) sb.removeChannel(chatReporteChannel);
   chatReporteChannel = sb.channel('chat-r-'+Date.now())
     .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_reportes' }, (payload) => {
@@ -1625,7 +1644,8 @@ function iniciarTracking() {
       clearInterval(trackInterval);
       showToast('¡Tu pedido fue entregado!', 3000);
       mostrarBotonDevolucion();
-      setTimeout(() => mostrarRating(currentComercio?.nombre || 'el comercio'), 2500);
+      // Mostrar rating después de cerrar el overlay de calificación
+      setTimeout(() => mostrarRating(currentComercio?.nombre || 'el comercio'), 1000);
     }
   }, 6000);
 }
