@@ -527,10 +527,35 @@ function cerrarChat() {
 }
 
 async function init(){
-  try{const{data}=await sb.from('comercios').select('*').limit(1).single();
-    if(data){cid=data.id;document.getElementById('cnombre').textContent=data.nombre;setTimeout(checkMPConectado,1000);document.getElementById('cn').value=data.nombre||'';document.getElementById('cc').value=data.categoria||'comida';document.getElementById('cd').value=data.direccion||'';document.getElementById('ct').value=data.telefono||'';document.getElementById('ce').value=data.precio_envio_propio||800;document.getElementById('cr').value=data.radio_entrega_km||3;document.getElementById('s-rat').textContent=data.rating||'5.0';ab=data.abierto_ahora!==false;document.getElementById('tdot').className='tdot'+(ab?'':' off');document.getElementById('tlbl').textContent=ab?'Abierto':'Cerrado';}}catch{}
-  await cargarProds();await cargarPeds();
-  // Verificar reportes pendientes
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const userId = session?.user?.id;
+    
+    // Buscar comercio del usuario logueado
+    let query = sb.from('comercios').select('*');
+    if (userId) {
+      query = query.eq('usuario_id', userId);
+    }
+    const { data } = await query.limit(1).single();
+    
+    if(data){
+      cid=data.id;
+      document.getElementById('cnombre').textContent=data.nombre;
+      setTimeout(checkMPConectado,1000);
+      document.getElementById('cn').value=data.nombre||'';
+      document.getElementById('cc').value=data.categoria||'comida';
+      document.getElementById('cd').value=data.direccion||'';
+      document.getElementById('ct').value=data.telefono||'';
+      document.getElementById('ce').value=data.precio_envio_propio||800;
+      document.getElementById('cr').value=data.radio_entrega_km||3;
+      document.getElementById('s-rat').textContent=data.rating||'5.0';
+      ab=data.abierto_ahora!==false;
+      document.getElementById('tdot').className='tdot'+(ab?'':' off');
+      document.getElementById('tlbl').textContent=ab?'Abierto':'Cerrado';
+    }
+  } catch {}
+  await cargarProds();
+  await cargarPeds();
   verificarReportesPendientes();
 }
 
