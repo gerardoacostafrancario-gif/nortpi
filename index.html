@@ -1655,28 +1655,65 @@ async function cargarPedidos() {
   try {
     const { data } = await sb.from('pedidos').select('*,comercios(nombre)').order('created_at',{ascending:false}).limit(10);
     if (!data || !data.length) throw new Error('vacío');
+
+    // Buscar reportes activos para estos pedidos
+    let reportesActivos = {};
+    try {
+      const ids = data.map(p => p.id).filter(Boolean);
+      if (ids.length) {
+        const { data: reps } = await sb.from('reportes').select('*').in('pedido_id', ids).eq('estado','pendiente');
+        (reps||[]).forEach(r => { reportesActivos[r.pedido_id] = r; });
+      }
+    } catch {}
+
     container.innerHTML = data.map(p => {
       const estado = p.estado || 'confirmado';
       const claseEstado = estado === 'entregado' ? 'ep-entregado' : estado === 'cancelado' ? 'ep-cancelado' : 'ep-camino';
       const labelEstado = estado === 'entregado' ? 'Entregado' : estado === 'cancelado' ? 'Cancelado' : 'En camino';
+      const reporte = reportesActivos[p.id];
+      const tipoLabel = {'no-llegó':'No llegó lo pedido','mal-estado':'Llegó en mal estado','faltó-algo':'Faltó algo','no-llegó-pedido':'No recibió el pedido'};
+      const chatBtn = reporte ? `
+        <button onclick="event.stopPropagation();reabrirChat('${reporte.id}','${reporte.tipo}','${reporte.limite_resolucion||''}')" 
+          style="width:100%;margin-top:10px;background:#FEF3C7;color:#92400E;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;">
+          💬 Ver chat del reporte activo
+        </button>` : '';
       return `<div class="ped-card" onclick="go('tracking')">
         <div class="ped-top">
           <div class="ped-name">${p.comercios?.nombre || 'Comercio'}</div>
           <span class="estado-pill ${claseEstado}">${labelEstado}</span>
         </div>
         <div class="ped-meta">$${Number(p.total).toLocaleString('es-AR')} · ${new Date(p.created_at).toLocaleDateString('es-AR')}</div>
+        ${chatBtn}
       </div>`;
     }).join('');
   } catch {
     if (currentPedido) {
+      // Verificar si hay reporte activo para el pedido actual
+      let chatBtn = '';
+      try {
+        const { data: reps } = await sb.from('reportes').select('*').eq('pedido_id', currentPedido.id).eq('estado','pendiente').limit(1);
+        if (reps && reps.length) {
+          const r = reps[0];
+          chatBtn = `<button onclick="event.stopPropagation();reabrirChat('${r.id}','${r.tipo}','${r.limite_resolucion||''}')" 
+            style="width:100%;margin-top:10px;background:#FEF3C7;color:#92400E;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;">
+            💬 Ver chat del reporte activo
+          </button>`;
+        }
+      } catch {}
       container.innerHTML = `<div class="ped-card" onclick="go('tracking')">
         <div class="ped-top"><div class="ped-name">${currentComercio?.nombre||'Tu pedido'}</div><span class="estado-pill ep-camino">En camino</span></div>
         <div class="ped-meta">$${Number(currentPedido.total||0).toLocaleString('es-AR')} · Hoy</div>
+        ${chatBtn}
       </div>`;
     } else {
       container.innerHTML = '<div class="empty"><div class="big">📦</div><p>Todavía no hiciste ningún pedido.<br>¡Animate a pedir algo!</p></div>';
     }
   }
+}
+
+async function reabrirChat(reporteId, tipo, limiteStr) {
+  const tipoLabel = {'no-llegó':'No llegó lo pedido','mal-estado':'Llegó en mal estado','faltó-algo':'Faltó algo','no-llegó-pedido':'No recibió el pedido'};
+  await abrirChatReporte(reporteId, tipoLabel[tipo]||tipo, limiteStr);
 }
 
 async function cerrarSesion() {
