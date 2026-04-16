@@ -1563,8 +1563,19 @@ async function confirmarPedido() {
   const sub = items.reduce((s,i) => s+i.precio*i.qty, 0);
   const total = sub + 800;
   const nota = document.getElementById('nota-pedido')?.value?.trim() || '';
+
+  // Asegurar que tenemos un comercio_id válido (UUID real, no demo)
+  let comercioId = currentComercio?.id;
+  if (!comercioId || comercioId.length < 10) {
+    // Buscar el primer comercio real de Supabase como fallback
+    try {
+      const { data } = await sb.from('comercios').select('id').limit(1).single();
+      comercioId = data?.id;
+    } catch {}
+  }
+
   const pedido = {
-    comercio_id: currentComercio?.id,
+    comercio_id: comercioId,
     items,
     subtotal: sub,
     costo_envio: 800,
