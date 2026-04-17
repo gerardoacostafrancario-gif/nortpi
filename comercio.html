@@ -104,10 +104,10 @@ body{background:#f5f5f5;min-height:100vh;}
 .sh-t{font-size:16px;font-weight:700;color:#111;margin-bottom:16px;}
 .btn-sv{width:100%;background:#FF6B35;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;}
 .btn-cn{width:100%;background:#f5f5f5;color:#555;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;}
-.nav{display:flex;justify-content:space-around;padding:8px 0 12px;border-top:1px solid #eee;background:#fff;position:fixed;bottom:0;width:100%;max-width:480px;z-index:100;}
-.ni{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;flex:1;min-width:0;}
-.ni svg{width:20px;height:20px;}
-.ni span{font-size:9px;color:#888;white-space:nowrap;}
+.nav{display:flex;justify-content:space-around;padding:10px 0 14px;border-top:1px solid #eee;background:#fff;position:fixed;bottom:0;width:100%;max-width:480px;z-index:100;}
+.ni{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+.ni svg{width:22px;height:22px;}
+.ni span{font-size:10px;color:#888;}
 .ni.active svg{stroke:#FF6B35;}
 .ni.active span{color:#FF6B35;font-weight:700;}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#111;color:#FF6B35;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;display:none;white-space:nowrap;}
@@ -330,10 +330,6 @@ body{background:#f5f5f5;min-height:100vh;}
   <div class="ni active" id="ni-p" onclick="stab('p');aN('ni-p')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
     <span>Pedidos</span>
-  </div>
-  <div class="ni" id="ni-r" onclick="stab('r');cargarReportes();aN('ni-r')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <span>Reportes</span>
   </div>
   <div class="ni" id="ni-ia" onclick="stab('ia');iniciarAsistenteIA();aN('ni-ia')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
