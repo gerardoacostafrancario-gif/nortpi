@@ -104,10 +104,11 @@ body{background:#f5f5f5;min-height:100vh;}
 .sh-t{font-size:16px;font-weight:700;color:#111;margin-bottom:16px;}
 .btn-sv{width:100%;background:#FF6B35;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px;}
 .btn-cn{width:100%;background:#f5f5f5;color:#555;border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;}
-.nav{display:flex;justify-content:space-around;padding:10px 0 14px;border-top:1px solid #eee;background:#fff;position:fixed;bottom:0;width:100%;max-width:480px;z-index:100;}
-.ni{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;flex:1;}
+.nav{display:flex;justify-content:space-around;padding:8px 0 12px;border-top:1px solid #eee;background:#fff;position:fixed;bottom:0;width:100%;max-width:480px;z-index:100;}
+.ni{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;flex:1;min-width:0;}
 .ni svg{width:20px;height:20px;}
-.ni span{font-size:9px;color:#888;}
+.ni span{font-size:9px;color:#888;white-space:nowrap;}
+.ni.active svg{stroke:#FF6B35;}
 .ni.active span{color:#FF6B35;font-weight:700;}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#111;color:#FF6B35;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;display:none;white-space:nowrap;}
 
