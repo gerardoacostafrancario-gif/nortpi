@@ -174,8 +174,9 @@ body{background:#f5f5f5;min-height:100vh;}
 </div>
 <div class="tabs">
   <div class="tab active" id="tab-p" onclick="stab('p')">Pedidos <span class="badge-n" id="bn" style="display:none">0</span></div>
-  <div class="tab" id="tab-r" onclick="stab('r');cargarReportes()">⚠️ Reportes <span class="badge-r" id="br" style="display:none">0</span></div>
+  <div class="tab" id="tab-r" onclick="stab('r');cargarReportes();aN('ni-r')">⚠️ Reportes <span class="badge-r" id="br" style="display:none">0</span></div>
   <div class="tab" id="tab-m" onclick="stab('m')">Menú</div>
+  <div class="tab" id="tab-ia" onclick="stab('ia');aN('ni-ia')">🤖 IA</div>
   <div class="tab" id="tab-c" onclick="stab('c')">Config</div>
 </div>
 
@@ -188,7 +189,40 @@ body{background:#f5f5f5;min-height:100vh;}
   <div id="reportes-list"><div class="empty"><div class="big">✅</div><p>No tenés reportes activos.<br>¡Todo bien con tus pedidos!</p></div></div>
 </div>
 
-<div class="sec" id="sec-m">
+<div class="sec" id="sec-ia">
+  <!-- ALERTAS INTELIGENTES -->
+  <div id="ia-alertas" style="margin-bottom:12px;"></div>
+
+  <!-- CHAT ASISTENTE -->
+  <div style="background:#fff;border-radius:16px;border:1px solid #f0f0f0;overflow:hidden;display:flex;flex-direction:column;" id="ia-chat-wrap">
+    <div style="background:linear-gradient(135deg,#FF6B35,#E55A27);padding:14px 16px;display:flex;align-items:center;gap:10px;">
+      <div style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;">🤖</div>
+      <div>
+        <div style="font-size:14px;font-weight:800;color:#fff;">Asistente IA</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.8);">Tu asistente personal de negocio</div>
+      </div>
+    </div>
+    <div id="ia-msgs" style="height:320px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;background:#F4F5F7;"></div>
+    <div style="background:#fff;padding:10px 12px;display:flex;gap:8px;align-items:center;border-top:1px solid #f0f0f0;">
+      <input id="ia-input" placeholder="Preguntame algo sobre tu negocio..."
+        style="flex:1;border:1.5px solid #eee;border-radius:20px;padding:9px 14px;font-size:13px;outline:none;font-family:inherit;"
+        onkeydown="if(event.key==='Enter')enviarIA()"/>
+      <button onclick="enviarIA()" id="ia-btn" style="width:38px;height:38px;border-radius:50%;background:#FF6B35;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- PREGUNTAS RÁPIDAS -->
+  <div style="margin-top:12px;">
+    <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Preguntas frecuentes</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      ${['¿Cómo mejorar mi rating?','¿Qué hago si tengo muchos reportes?','¿Cómo aumentar mis ventas?','¿Cómo configuro MercadoPago?'].map(p=>
+        `<button onclick="preguntaRapidaIA('${p}')" style="background:#fff;border:1px solid #eee;border-radius:10px;padding:10px 14px;text-align:left;font-size:13px;color:#333;cursor:pointer;font-family:inherit;">${p} →</button>`
+      ).join('')}
+    </div>
+  </div>
+</div>
   <div class="menu-head"><div style="font-size:14px;font-weight:700;color:#111;">Mis productos</div><button class="btn-add" onclick="abrirF()">+ Agregar</button></div>
   <div id="prc"><div class="empty"><div class="big">🍽️</div><p>Cargá tus productos tocando "+ Agregar".</p></div></div>
 </div>
@@ -298,6 +332,10 @@ body{background:#f5f5f5;min-height:100vh;}
   <div class="ni" id="ni-r" onclick="stab('r');cargarReportes();aN('ni-r')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     <span>Reportes</span>
+  </div>
+  <div class="ni" id="ni-ia" onclick="stab('ia');iniciarAsistenteIA();aN('ni-ia')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+    <span>IA</span>
   </div>
   <div class="ni" id="ni-m" onclick="stab('m');aN('ni-m')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -653,9 +691,101 @@ function conectarMP(){const CLIENT_ID='3886989011728021';const REDIRECT_URI=enco
 async function checkMPConectado(){if(!cid)return;try{const{data}=await sb.from('comercios').select('mp_conectado').eq('id',cid).single();if(data?.mp_conectado){document.getElementById('mp-no-conectado').style.display='none';document.getElementById('mp-conectado').style.display='flex';}}catch{}}
 
 setInterval(cargarPeds,30000);
-setInterval(verificarReportesPendientes,60000);
+setInterval(verificarReportesPendientes,5000);
 
 // Realtime — pedidos nuevos
+// ── ASISTENTE IA COMERCIO ──
+let iaHistorial = [];
+let iaIniciado = false;
+
+async function iniciarAsistenteIA() {
+  if (iaIniciado) return;
+  iaIniciado = true;
+  agregarMsgIA('bot', `¡Hola! Soy tu asistente de negocio 🤖\n\nPuedo ayudarte con:\n• Cómo mejorar tu rating y ventas\n• Qué hacer con reportes de clientes\n• Configuración de pagos y delivery\n• Estadísticas y consejos\n\n¿En qué te ayudo hoy?`);
+  await cargarAlertasIA();
+}
+
+async function cargarAlertasIA() {
+  try {
+    const { data: reps } = await sb.from('reportes').select('tipo').eq('comercio_id', cid).gte('created_at', new Date(Date.now() - 7*24*60*60*1000).toISOString());
+    const cont = document.getElementById('ia-alertas');
+    if (!cont || !reps || !reps.length) return;
+    const conteo = {};
+    reps.forEach(r => conteo[r.tipo] = (conteo[r.tipo]||0) + 1);
+    const tipoLabel = {'no-llegó':'No llegó lo pedido','mal-estado':'Mal estado','faltó-algo':'Faltó algo','no-llegó-pedido':'No recibieron el pedido'};
+    const alertas = Object.entries(conteo).filter(([,n]) => n >= 2);
+    if (!alertas.length) return;
+    cont.innerHTML = alertas.map(([tipo, n]) => `
+      <div style="background:#FEF3C7;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:18px;">⚠️</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#92400E;">Alerta: ${tipoLabel[tipo]||tipo}</div>
+          <div style="font-size:12px;color:#92400E;margin-top:2px;">Tuviste ${n} reportes de este tipo esta semana.</div>
+          <button onclick="preguntaRapidaIA('Tuve ${n} reportes de este tipo esta semana, qué puedo hacer para mejorar?')" 
+            style="background:#FF6B35;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-top:6px;">Ver consejos →</button>
+        </div>
+      </div>`).join('');
+  } catch {}
+}
+
+function agregarMsgIA(de, texto) {
+  const cont = document.getElementById('ia-msgs');
+  if (!cont) return;
+  const esBot = de === 'bot';
+  const textoHtml = texto.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  const div = document.createElement('div');
+  div.style.cssText = `display:flex;justify-content:${esBot?'flex-start':'flex-end'};`;
+  if (esBot) {
+    div.innerHTML = `<div style="max-width:85%;background:#fff;color:#111;border-radius:4px 14px 14px 14px;padding:10px 14px;font-size:13px;line-height:1.6;box-shadow:0 1px 3px rgba(0,0,0,.08);">${textoHtml}</div>`;
+  } else {
+    div.innerHTML = `<div style="max-width:85%;background:#FF6B35;color:#fff;border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:13px;line-height:1.5;">${textoHtml}</div>`;
+  }
+  cont.appendChild(div);
+  cont.scrollTop = cont.scrollHeight;
+}
+
+function preguntaRapidaIA(pregunta) {
+  const input = document.getElementById('ia-input');
+  if (input) { input.value = pregunta; enviarIA(); }
+}
+
+async function enviarIA() {
+  const input = document.getElementById('ia-input');
+  const btn = document.getElementById('ia-btn');
+  if (!input || !input.value.trim()) return;
+  const texto = input.value.trim();
+  input.value = '';
+  btn.disabled = true;
+  agregarMsgIA('usuario', texto);
+  iaHistorial.push({ role: 'user', content: texto });
+  const cont = document.getElementById('ia-msgs');
+  const typing = document.createElement('div');
+  typing.id = 'ia-typing';
+  typing.style.cssText = 'display:flex;justify-content:flex-start;';
+  typing.innerHTML = `<div style="background:#fff;border-radius:4px 14px 14px 14px;padding:10px 16px;box-shadow:0 1px 3px rgba(0,0,0,.08);"><div style="display:flex;gap:4px;height:16px;align-items:center;"><div style="width:6px;height:6px;border-radius:50%;background:#ccc;animation:bounce 1.2s infinite;"></div><div style="width:6px;height:6px;border-radius:50%;background:#ccc;animation:bounce 1.2s .2s infinite;"></div><div style="width:6px;height:6px;border-radius:50%;background:#ccc;animation:bounce 1.2s .4s infinite;"></div></div></div>`;
+  if (cont) { cont.appendChild(typing); cont.scrollTop = cont.scrollHeight; }
+  try {
+    const res = await fetch('/api/asistente', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: iaHistorial, rol: 'comercio' })
+    });
+    const data = await res.json();
+    const respuesta = data.respuesta || 'No pude procesar tu consulta.';
+    document.getElementById('ia-typing')?.remove();
+    agregarMsgIA('bot', respuesta);
+    iaHistorial.push({ role: 'assistant', content: respuesta });
+  } catch {
+    document.getElementById('ia-typing')?.remove();
+    agregarMsgIA('bot', 'Error de conexión. Intentá de nuevo.');
+  }
+  btn.disabled = false;
+}
+
+const iaBounce = document.createElement('style');
+iaBounce.textContent = `@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}`;
+document.head.appendChild(iaBounce);
+
 function iniciarRealtime(){
   try{sb.channel('pedidos-nuevos').on('postgres_changes',{event:'INSERT',schema:'public',table:'pedidos'},()=>{sonarNotificacion();toast('🔔 ¡Nuevo pedido!',4000);cargarPeds();}).on('postgres_changes',{event:'UPDATE',schema:'public',table:'pedidos'},()=>{cargarPeds();}).subscribe();
   // Escuchar reportes nuevos
