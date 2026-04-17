@@ -10,6 +10,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="P a P Comercio"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;-webkit-tap-highlight-color:transparent;}
 body{background:#f5f5f5;min-height:100vh;}
@@ -225,6 +228,8 @@ body{background:#f5f5f5;min-height:100vh;}
     </div>
   </div>
 </div>
+
+<div class="sec" id="sec-m">
   <div class="menu-head"><div style="font-size:14px;font-weight:700;color:#111;">Mis productos</div><button class="btn-add" onclick="abrirF()">+ Agregar</button></div>
   <div id="prc"><div class="empty"><div class="big">🍽️</div><p>Cargá tus productos tocando "+ Agregar".</p></div></div>
 </div>
@@ -326,7 +331,6 @@ body{background:#f5f5f5;min-height:100vh;}
   </div>
 </div>
 
-
 </div>
 
 <script>
@@ -335,6 +339,59 @@ const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6I
 const sb=supabase.createClient(SU,SK);
 let cid=null,ab=true,prods=[],peds=[],delDef='hibrido',epid=null,choices={};
 let reporteActivo=null,chatInterval=null;
+
+// ── FIREBASE PUSH NOTIFICATIONS ──
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAdRnQQ-ZlZnZLEqbH0rNc5CExwWxMkVdE",
+  authDomain: "puerta-a-puerta-dc67c.firebaseapp.com",
+  projectId: "puerta-a-puerta-dc67c",
+  storageBucket: "puerta-a-puerta-dc67c.firebasestorage.app",
+  messagingSenderId: "685654039640",
+  appId: "1:685654039640:web:28f9f623c7642a4ef87e2d"
+};
+const VAPID_KEY = 'BKQtBvAeYGRxaL9_UQKOBDtIuJex4ajlKyYM8w9GZZKOcbThtfWsIIAU2I57LilhrH_DFgxlkXh0BAeg_EsFCwA';
+
+async function inicializarNotificaciones(userId) {
+  try {
+    if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+
+    // Inicializar Firebase (evitar duplicados)
+    if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    const messaging = firebase.messaging();
+
+    // Registrar el service worker de Firebase
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    console.log('🔔 Service Worker Firebase registrado');
+
+    // Pedir permiso al usuario
+    const permiso = await Notification.requestPermission();
+    if (permiso !== 'granted') {
+      console.warn('Permiso de notificaciones denegado');
+      return;
+    }
+
+    // Obtener token FCM
+    const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
+    if (!token) return;
+    console.log('Token FCM obtenido:', token);
+
+    // Guardar token en Supabase
+    await sb.from('fcm_tokens').upsert({ user_id: userId, token, rol: 'comercio' }, { onConflict: 'user_id' });
+    console.log('✅ Token guardado en Supabase');
+
+    // Manejar notificaciones cuando la app está abierta (foreground)
+    messaging.onMessage((payload) => {
+      console.log('Notificación en foreground:', payload);
+      const titulo = payload.notification?.title || '🔔 Puerta a Puerta';
+      const cuerpo = payload.notification?.body || '';
+      toast(`${titulo}: ${cuerpo}`, 5000);
+      sonarNotificacion();
+    });
+
+  } catch (err) {
+    console.error('Error inicializando notificaciones:', err);
+  }
+}
 
 function toast(m,d=2500){const t=document.getElementById('t');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',d);}
 function stab(tab){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));document.getElementById('tab-'+tab).classList.add('active');document.getElementById('sec-'+tab).classList.add('active');}
@@ -430,7 +487,6 @@ async function abrirChat(reporteId, tipo, limiteStr) {
   document.getElementById('chat-screen').classList.add('visible');
   await cargarMensajesChat(reporteId);
 
-  // Polling cada 3 segundos
   if (chatInterval) clearInterval(chatInterval);
   let lastCount = 0;
   chatInterval = setInterval(async () => {
@@ -451,7 +507,6 @@ async function abrirChat(reporteId, tipo, limiteStr) {
     } catch {}
   }, 3000);
 
-  // Cuenta regresiva
   if (limiteStr && limiteStr !== 'null' && limiteStr !== '') {
     const limite = new Date(limiteStr);
     const cntInterval = setInterval(() => {
@@ -503,11 +558,7 @@ async function enviarRespuesta() {
     cont.scrollTop = cont.scrollHeight;
   }
   try {
-    await sb.from('chat_reportes').insert([{
-      reporte_id: reporteActivo,
-      de: 'comercio',
-      texto,
-    }]);
+    await sb.from('chat_reportes').insert([{ reporte_id: reporteActivo, de: 'comercio', texto }]);
   } catch {}
 }
 
@@ -522,11 +573,8 @@ async function init(){
     const { data: { session } } = await sb.auth.getSession();
     const userId = session?.user?.id;
     
-    // Buscar comercio del usuario logueado
     let query = sb.from('comercios').select('*');
-    if (userId) {
-      query = query.eq('usuario_id', userId);
-    }
+    if (userId) query = query.eq('usuario_id', userId);
     const { data } = await query.limit(1).single();
     
     if(data){
@@ -544,6 +592,12 @@ async function init(){
       document.getElementById('tdot').className='tdot'+(ab?'':' off');
       document.getElementById('tlbl').textContent=ab?'Abierto':'Cerrado';
     }
+
+    // ── Inicializar notificaciones push ──
+    if (userId) {
+      inicializarNotificaciones(userId);
+    }
+
   } catch {}
   await cargarProds();
   await cargarPeds();
@@ -674,7 +728,6 @@ async function checkMPConectado(){if(!cid)return;try{const{data}=await sb.from('
 setInterval(cargarPeds,30000);
 setInterval(verificarReportesPendientes,5000);
 
-// Realtime — pedidos nuevos
 // ── ASISTENTE IA COMERCIO ──
 let iaHistorial = [];
 let iaIniciado = false;
@@ -768,9 +821,10 @@ iaBounce.textContent = `@keyframes bounce{0%,100%{transform:translateY(0)}50%{tr
 document.head.appendChild(iaBounce);
 
 function iniciarRealtime(){
-  try{sb.channel('pedidos-nuevos').on('postgres_changes',{event:'INSERT',schema:'public',table:'pedidos'},()=>{sonarNotificacion();toast('🔔 ¡Nuevo pedido!',4000);cargarPeds();}).on('postgres_changes',{event:'UPDATE',schema:'public',table:'pedidos'},()=>{cargarPeds();}).subscribe();
-  // Escuchar reportes nuevos
-  sb.channel('reportes-nuevos').on('postgres_changes',{event:'INSERT',schema:'public',table:'reportes'},()=>{sonarNotificacion();toast('⚠️ ¡Nuevo reporte de un usuario!',5000);verificarReportesPendientes();}).subscribe();}catch{}
+  try{
+    sb.channel('pedidos-nuevos').on('postgres_changes',{event:'INSERT',schema:'public',table:'pedidos'},()=>{sonarNotificacion();toast('🔔 ¡Nuevo pedido!',4000);cargarPeds();}).on('postgres_changes',{event:'UPDATE',schema:'public',table:'pedidos'},()=>{cargarPeds();}).subscribe();
+    sb.channel('reportes-nuevos').on('postgres_changes',{event:'INSERT',schema:'public',table:'reportes'},()=>{sonarNotificacion();toast('⚠️ ¡Nuevo reporte de un usuario!',5000);verificarReportesPendientes();}).subscribe();
+  }catch{}
 }
 
 function sonarNotificacion(){try{const ctx=new(window.AudioContext||window.webkitAudioContext)();[523,659,784].forEach((freq,i)=>{const osc=ctx.createOscillator();const gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.frequency.value=freq;osc.type='sine';gain.gain.setValueAtTime(0.3,ctx.currentTime+i*.15);gain.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+i*.15+.2);osc.start(ctx.currentTime+i*.15);osc.stop(ctx.currentTime+i*.15+.2);});}catch{}}
@@ -780,10 +834,8 @@ sb.auth.getSession().then(({data:{session}})=>{
   else{init();}
 });
 
-if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{});}
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();deferredPrompt=e;});
-if('Notification' in window&&Notification.permission==='default'){Notification.requestPermission();}
 iniciarRealtime();
 </script>
 </body>
