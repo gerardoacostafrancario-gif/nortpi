@@ -1,52 +1,42 @@
-const VAPID_KEY = 'BKQtBvAeYGRxaL9_UQKOBDtIuJex4ajlKyYM8w9GZZKOcbThtfWsIIAU2I57LilhrH_DFgxlkXh0BAeg_EsFCwA';
+// API/notificaciones.js — Web Push con VAPID nativo
+// Vercel Serverless Function
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAdRnQQ-ZlZnZLEqbH0rNc5CExwWxMkVdE",
-  authDomain: "puerta-a-puerta-dc67c.firebaseapp.com",
-  projectId: "puerta-a-puerta-dc67c",
-  storageBucket: "puerta-a-puerta-dc67c.firebasestorage.app",
-  messagingSenderId: "685654039640",
-  appId: "1:685654039640:web:28f9f623c7642a4ef87e2d"
-};
+const webpush = require('web-push');
 
-async function inicializarNotificaciones(userId, rol) {
-  try {
-    // Registrar service worker
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    console.log('Service Worker registrado');
+const VAPID_PUBLIC = 'BMOSombn5870MeH1ufWwYLEosTFqcDPuD5t-GtpWzQ33C8gEP0D9TC6IXvauq0qxDK13pUmtU0g8m-h25brELSM';
+const VAPID_PRIVATE = 'Ku_iBASeFbbHqNH_iJGJtIgU3Qx6_UaM5cgjLvTlFt4';
 
-    // Importar Firebase
-    const { initializeApp, getApps } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js');
-    const { getMessaging, getToken } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js');
+webpush.setVapidDetails(
+  'mailto:gerardoacostafrancario@gmail.com',
+  VAPID_PUBLIC,
+  VAPID_PRIVATE
+);
 
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    const messaging = getMessaging(app);
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
-    // Pedir permiso
-    const permiso = await Notification.requestPermission();
-    if (permiso !== 'granted') {
-      console.warn('Permiso de notificaciones denegado');
-      return null;
-    }
-
-    // Obtener token FCM
-    const token = await getToken(messaging, { 
-      vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: registration
-    });
-
-    console.log('Token FCM:', token);
-
-    // Guardar en Supabase
-    const { data, error } = await supabase
-      .from('fcm_tokens')
-      .upsert({ user_id: userId, token, rol }, { onConflict: 'user_id' });
-
-    if (error) console.error('Error guardando token:', error);
-    else console.log('Token guardado en Supabase');
-
-    return token;
-  } catch (error) {
-    console.error('Error inicializando notificaciones:', error);
+  if (req.method === 'GET' && req.query.vapidPublic) {
+    return res.json({ publicKey: VAPID_PUBLIC });
   }
-}
+
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { subscription, title, body, icon } = req.body;
+
+  if (!subscription) return res.status(400).json({ error: 'Falta subscription' });
+
+  try {
+    await webpush.sendNotification(subscription, JSON.stringify({
+      title: title || '🔔 Puerta a Puerta',
+      body: body || 'Tenés una notificación nueva',
+      icon: icon || '/icons/icon-192.png'
+    }));
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('Error enviando notificación:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
