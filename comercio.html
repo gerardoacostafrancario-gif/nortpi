@@ -358,6 +358,10 @@ async function inicializarNotificaciones(userId) {
     await navigator.serviceWorker.ready;
     console.log('🔔 Service Worker registrado');
 
+    // Limpiar suscripción vieja si existe
+    const existingSub = await registration.pushManager.getSubscription();
+    if (existingSub) await existingSub.unsubscribe();
+
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC)
