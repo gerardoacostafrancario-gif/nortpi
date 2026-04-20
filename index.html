@@ -319,6 +319,7 @@ body{background:#EDEDED;display:flex;justify-content:center;min-height:100vh;ove
     <div class="cat" onclick="filtrar(this,'carniceria')">🥩 Carnicería</div>
     <div class="cat" onclick="filtrar(this,'farmacia')">💊 Farmacia</div>
     <div class="cat" onclick="filtrar(this,'panaderia')">🍞 Panadería</div>
+    <div class="cat" onclick="filtrar(this,'kiosco')">🏪 Kiosco</div>
   </div></div>
   <div style="margin:14px 18px 10px;border-radius:var(--radius-lg);overflow:hidden;position:relative;height:100px;cursor:pointer;"><img src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=700&q=80" alt="Cerca tuyo" style="width:100%;height:100%;object-fit:cover;display:block;"/><div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(13,13,13,.72) 0%,rgba(13,13,13,.2) 100%);"></div><div style="position:absolute;inset:0;padding:16px 18px;display:flex;flex-direction:column;justify-content:center;"><div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-.3px;">Cerca tuyo</div><div style="font-size:12px;color:rgba(255,255,255,.7);font-weight:500;margin-top:3px;">Comercios disponibles ahora</div></div><div style="position:absolute;right:16px;top:50%;transform:translateY(-50%);"><span style="font-size:12px;font-weight:700;color:var(--brand);background:rgba(0,0,0,.5);padding:5px 12px;border-radius:20px;backdrop-filter:blur(4px);">Ver todos</span></div></div>
   <div id="comercios-container"><div class="loader">Cargando comercios...</div></div>
@@ -452,6 +453,7 @@ const RUBROS = [
   {id:'carniceria',label:'Carnicería',emoji:'🥩',img:'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=600&q=80'},
   {id:'farmacia',label:'Farmacia',emoji:'💊',img:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=600&q=80'},
   {id:'panaderia',label:'Panadería',emoji:'🍞',img:'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80'},
+  {id:'kiosco',label:'Kiosco',emoji:'🏪',img:'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=600&q=80'},
 ];
 
 function renderRubros() {
