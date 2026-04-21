@@ -342,18 +342,24 @@ function abrirOvPromo(){
 function cerrarOvPromo(){document.getElementById('ov-promo').classList.remove('show');}
 
 async function guardarPromo(){
+  if(!cid){toast('Error: recarga la pagina');return;}
   if(tipoPromoSel==='descuento'){const pct=parseInt(document.getElementById('pr-pct').value);if(!pct||pct<1||pct>90){toast('Ingresa un porcentaje entre 1 y 90');return;}}
   const fecha=document.getElementById('pr-fecha').value;
   if(!fecha){toast('Elegi una fecha de vencimiento');return;}
   const promo={comercio_id:cid,tipo:tipoPromoSel,porcentaje:tipoPromoSel==='descuento'?parseInt(document.getElementById('pr-pct').value):null,producto_id:document.getElementById('pr-prod').value||null,descripcion:document.getElementById('pr-desc').value.trim()||null,fecha_fin:fecha,activa:true};
-  try{await sb.from('promociones').insert([promo]);cerrarOvPromo();toast('Promocion activada!');cargarPromociones();}catch(e){toast('Error al guardar. Intenta de nuevo.');}
+  console.log('Guardando promo con cid:', cid, promo);
+  try{
+    const{data,error}=await sb.from('promociones').insert([promo]).select().single();
+    if(error){console.error('Error promo:',error);toast('Error: '+error.message);return;}
+    cerrarOvPromo();toast('Promocion activada!');cargarPromociones();
+  }catch(e){console.error('Excepcion promo:',e);toast('Error al guardar. Intenta de nuevo.');}
 }
 
 async function cargarPromociones(){
   const cont=document.getElementById('promos-list');
   cont.innerHTML='<div style="text-align:center;padding:30px;color:#888;font-size:13px;">Cargando...</div>';
   try{
-    const{data}=await sb.from('promociones').select('*,productos(nombre)').eq('comercio_id',cid).order('created_at',{ascending:false});
+    const{data}=await sb.from('promociones').select('*').eq('comercio_id',cid).order('created_at',{ascending:false});
     const promos=data||[];
     if(!promos.length){cont.innerHTML='<div class="empty"><div class="big">🔥</div><p>No tenes promociones activas.<br>Crea una para atraer mas clientes.</p></div>';return;}
     cont.innerHTML=promos.map(p=>{
@@ -363,7 +369,7 @@ async function cargarPromociones(){
       const estadoBg=estado==='Activa'?'#DCFCE7':'#F3F4F6';
       const tipoLabel=p.tipo==='descuento'?`${p.porcentaje}% de descuento`:'Envio gratis';
       const tipoIcon=p.tipo==='descuento'?'%':'🛵';
-      const aplica=p.productos?.nombre||'Todo el menu';
+      const aplica='Todo el menu';
       const fechaFin=p.fecha_fin?new Date(p.fecha_fin).toLocaleDateString('es-AR'):'Sin limite';
       return`<div class="promo-card ${estado==='Activa'?'activa':''}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
