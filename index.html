@@ -579,7 +579,10 @@ async function cargarPedidos(){
   const container=document.getElementById('pedidos-list');
   container.innerHTML='<div class="loader">Cargando pedidos...</div>';
   try{
-    const{data}=await sb.from('pedidos').select('*,comercios(nombre,imagen_url)').order('created_at',{ascending:false}).limit(30);
+    const{data:{session}}=await sb.auth.getSession();
+    const userId=session?.user?.id;
+    if(!userId)throw new Error('sin sesion');
+    const{data}=await sb.from('pedidos').select('*,comercios(nombre,imagen_url)').eq('usuario_id',userId).order('created_at',{ascending:false}).limit(30);
     if(!data||!data.length)throw new Error('vacío');
     let reportesActivos={};
     try{const ids=data.map(p=>p.id).filter(Boolean);if(ids.length){const{data:reps}=await sb.from('reportes').select('*').in('pedido_id',ids).eq('estado','pendiente');(reps||[]).forEach(r=>{reportesActivos[r.pedido_id]=r;});}}catch{}
